@@ -1,0 +1,354 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <script type="text/javascript" src="./utilities.js"></script>
+    <style>
+      body {
+        margin: 10px;
+        padding: 10px;
+        background-color: #DDD;
+      }
+      #myCanvas {
+        background-color: #FFF;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="myCanvas" width="900" height="900"></canvas>
+    <script>
+var canvas = document.getElementById("myCanvas");
+var context = canvas.getContext("2d");
+
+const GUIDE_LINE = {color: "#555", lineWidth: 1};
+let backPoints = {};
+let frontPoints = {};
+
+grid(GRID_SIZE, 1, GRID_OFFSET);
+grid(GRID_SIZE/2, 1/2, GRID_OFFSET);
+grid(GRID_SIZE/4, 1/4, GRID_OFFSET);
+
+
+// Center lines
+let backTop = new Point([1,1]);
+let backBottom = new Point([1,29]);
+let frontTop = new Point([29,1]);
+let frontBottom = new Point([29,29]);
+drawLine(frontTop, frontBottom, GUIDE_LINE);
+drawLine(backTop, backBottom, GUIDE_LINE);
+
+// 3 R Across - Hip Line
+backPoints.R = getPointAlongLine(backBottom, backTop, 1);
+frontPoints.W = getPointAlongLine(frontBottom, frontTop, 1);
+drawLine(backPoints.R, frontPoints.W)
+
+// 4 R to F + Square - Waist Measurement
+let waistLevel = 8 + 1/4;
+backPoints.F = getPointAlongLine(backPoints.R, backTop, waistLevel);
+frontPoints.J = getPointAlongLine(frontPoints.W, frontTop, waistLevel);
+drawLine(backPoints.F, frontPoints.J);
+
+// 5 F to G + Square - Half Hip
+let halfHipLevel = 3 + 3/4;
+backPoints.G = getPointAlongLine(backPoints.F, backPoints.R, halfHipLevel);
+frontPoints.Y = getPointAlongLine(frontPoints.J, frontPoints.W, halfHipLevel);
+drawLine(backPoints.G, frontPoints.Y);
+
+// 6 F to A - Neck Line
+let waistToNeck = 16 + 1/4;
+backPoints.A = getPointAlongLine(backPoints.F, backTop, waistToNeck);
+
+// 7 F to E - Bust Level
+let bustLevel = 8;
+backPoints.E = getPointAlongLine(backPoints.F, backTop, bustLevel);
+frontPoints.R = getPointAlongLine(frontPoints.J, frontTop, bustLevel);
+drawLine(backPoints.E, frontPoints.R);
+
+// 8 E to D - Crossback Level. Halfway from E to A
+let crossbackLevel = 4 + 1/8
+backPoints.D = getPointAlongLine(backPoints.E, backTop, crossbackLevel);
+frontPoints.G = getPointAlongLine(frontPoints.R, frontTop, crossbackLevel);
+drawLine(backPoints.D, frontPoints.G);
+drawLine(backPoints.D, backPoints.A);
+
+// 9 A to B - Back Neckline
+let necklineBase = 3;
+backPoints.B = backPoints.A.squareRight(necklineBase);
+drawLine(backPoints.B, backPoints.A);
+
+// 9 A to B - Back Neckline guide across
+let necklineHeight = 1;
+backPoints.C = backPoints.B.squareUp(necklineHeight);
+// 10 B to C - Back Neckline guide up
+drawLine(backPoints.B, backPoints.C);
+// 11 A to C - Neckline curve
+// drawEulerSpiral(
+//   backPoints.A,
+//   {
+//     endPoint: backPoints.C,
+//     initialT: 0,
+//     isLeftHanded: true,
+//     parallelStartPoint: backPoints.B,
+//     // scale: 3.3
+//   }
+// );
+drawEulerParallelStart(backPoints.A, backPoints.C, backPoints.B);
+
+// 12 D to W - Crossback
+let crossback = 8;
+backPoints.W = backPoints.D.squareRight(crossback);
+
+// 13 W to K
+backPoints.K = backPoints.W.addv(backPoints.E.subv(backPoints.D));
+drawLine(backPoints.W, backPoints.K);
+
+// 14 W to H - Up from W
+let backNeck = 3 + 1/2;
+backPoints.H = backPoints.W.squareUp(backNeck);
+drawLine(backPoints.W, backPoints.H);
+
+// 15 H to H'
+backPoints["H'"] = backPoints.H.squareRight(1/2);
+backPoints["H'"].labelDir = "N";
+
+// 16 C to H' - Tracing Line
+// SKIP
+
+// 17 C to J - Along CH'
+let shoulder = 5 + 1/2;
+backPoints.J = getPointAlongLine(backPoints.C, backPoints["H'"], shoulder/2);
+
+// 18 J to J' - Dart Width
+let shoulderDartWidth = 1/2;
+backPoints["J'"] = getPointAlongLine(backPoints.J, backPoints["H'"], shoulderDartWidth);
+
+// 19 J' to I
+backPoints.I = getPointAlongLine(backPoints["J'"], backPoints["H'"], shoulder/2);
+backPoints.I.labelDir = "NE";
+
+// 20 F to F' - Center Back Intake
+let centerBackIntake = 1/4;
+backPoints["F'"] = backPoints.F.squareRight(centerBackIntake);
+backPoints["F'"].labelDir = "E";
+
+// 21 D to F'
+drawLine(backPoints.D, backPoints["F'"]);
+
+// 22 F to R'
+let FRPrimeLength = -6;
+backPoints["R'"] = backPoints.F.squareUp(FRPrimeLength);
+drawLine(backPoints["R'"], backPoints.R);
+
+// 23 F' to R'
+drawLine(backPoints["F'"], backPoints["R'"]);
+
+// 24 F' to N - To Waist Dart
+let waist = 7 + 3/4;
+backPoints.N = backPoints["F'"].squareRight(waist/2);
+
+// 25 N to N' - Waist Dart
+let waistDart = 1;
+backPoints["N'"] = backPoints.N.squareRight(waistDart);
+backPoints["N'"].labelDir = "E";
+
+// 26 N to N'' - Center of Waist Dart
+backPoints["N''"] = backPoints.N.squareRight(waistDart/2);
+backPoints["N''"].labelDir = "N";
+
+// 27 N' to O - Waistline
+backPoints.O = backPoints["N'"].squareRight(waist/2);
+backPoints.O.labelDir = "E";
+
+// 28 O to I' - End of Shoulder
+let endOfShoulder = 15 + 1/2;
+backPoints["I'"] = getPointAlongLine(backPoints.O, backPoints.I, endOfShoulder);
+backPoints["I'"].labelDir = "SE";
+
+// 29 C to I'
+// SKIP
+
+// 30 C to J - Along CI'
+backPoints.J = getPointAlongLine(backPoints.C, backPoints["I'"], shoulder/2);
+backPoints.J.labelDir = "SW";
+
+// 31 J to J'
+backPoints["J'"] = getPointAlongLine(backPoints.J, backPoints["I'"], shoulderDartWidth);
+backPoints["J'"].labelDir = "SE";
+
+// 32 J' to I
+backPoints.I = getPointAlongLine(backPoints["J'"], backPoints["I'"], shoulder/2);
+backPoints.I.labelDir = "NE";
+
+// 29 C to I - but better
+drawLine(backPoints.C, backPoints.I, GUIDE_LINE);
+
+// 33 J to N
+drawLine(backPoints.J, backPoints.N);
+
+// 34 J to S
+let shoulderDartLength = 3 + 1/2;
+backPoints.S = getPointAlongLine(backPoints.J, backPoints.N, shoulderDartLength);
+
+// 35 T - Inersection of Bust Line and JN
+backPoints.T = getIntersection(backPoints.J, backPoints.N, backPoints.E, backPoints.K);
+
+// 36 T to T' - 1" toward N
+let waistDartBustOffset = 1
+backPoints["T'"] = getPointAlongLine(backPoints.T, backPoints.N, waistDartBustOffset);
+
+// 37 J' to S - A slight curver, or straight
+drawLine(backPoints.S, backPoints["J'"])
+
+// 38 N' to T'
+drawLine(backPoints["N'"], backPoints["T'"])
+
+// 39 N'' to V
+let waistDartBottomLength = 4 + 1/2;
+backPoints.V = backPoints["N''"].squareUp(- waistDartBottomLength);
+
+// 40 N to V
+drawLine(backPoints.N, backPoints.V);
+
+// 41 N' to V
+drawLine(backPoints["N'"], backPoints.V);
+
+// 42 G' to P
+let halfHip = 8 + 1/4;
+backPoints["G'"] = getIntersection(backPoints.G, frontPoints.Y, backPoints["F'"], backPoints["R'"]);
+backPoints["G'"].labelDir = "NE";
+pointPPrime = getIntersection(backPoints.N, backPoints.V, backPoints.G, frontPoints.Y);
+pointPDoublePrime = getIntersection(backPoints["N'"], backPoints.V, backPoints.G, frontPoints.Y);
+backPoints.P = backPoints["G'"].squareRight(halfHip + pointPPrime.distTo(pointPDoublePrime))
+
+// 43 R to Q
+let hip = 9 + 1/4;
+backPoints.Q = backPoints.R.squareRight(hip);
+
+// 44 O to Q'
+let initialAngleQO = backPoints.Q.getAngle(backPoints.Q.squareUp(1));
+drawEulerPerpendicularWithPointInside(
+  backPoints.O, backPoints.P, [backPoints.R, backPoints.Q], initialAngleQO, {isLeftHanded: true}
+);
+
+// 45 E' to L
+let bust = 9 + 1/2;
+backPoints["E'"] = getIntersection(backPoints.E, backPoints.T, backPoints.D, backPoints["F'"]);
+backPoints["E'"].labelDir = "NE";
+backPoints.L = backPoints["E'"].squareRight(bust);
+
+// 46 L to L'
+let bustEase = 1/4;
+backPoints["L'"] = backPoints.L.squareRight(bustEase);
+backPoints["L'"].labelDir = "NE";
+
+// 47 O to L
+drawLine(backPoints.O, backPoints.L, GUIDE_LINE);
+
+// 48 O to M
+backPoints.M = getPointAlongLine(backPoints.O, backPoints.L, backPoints.O.distTo(backPoints.L)/3);
+backPoints.M.labelDir = "E"
+
+// 49 M to M'
+let mOffset = 1/4;
+backPoints["M'"] = backPoints.M.squareRight(- mOffset);
+
+// 50 L' to M' to O
+// drawEulerSpiral(
+//   backPoints["L'"],
+//   1,
+//   {isLeftHanded: true}
+// );
+
+// let p = new Point([0,0]);
+// console.log(p.getAngle(new Point([1,0])));
+// console.log(p.getAngle(new Point([1,1])));
+// console.log(p.getAngle(new Point([0,1])));
+// console.log(p.getAngle(new Point([-1,1])));
+// console.log(p.getAngle(new Point([-1,0])));
+// console.log(p.getAngle(new Point([-1,-1])));
+// console.log(p.getAngle(new Point([0,-1])));
+// console.log(p.getAngle(new Point([1,-1])));
+// console.log(p.getAngle(new Point([1,0])));
+// backPoints.ARF = new Point([10, .072]);
+// foo = new Point([10, .098]);
+// backPoints.BARF = getPointAlongLine(backPoints.ARF, foo, 1);
+// console.log(backPoints.ARF.getAngle(foo))
+
+// drawEulerSpiralThreePoint(
+//   backPoints["L'"],
+//   backPoints["M'"],
+//   backPoints.O,
+//   {
+//     isLeftHanded: true,
+//   }
+// );
+drawEulerMidpoint(
+  backPoints["L'"],
+  backPoints["M'"],
+  backPoints.O
+);
+
+// 51 K to K' - K' is 1" way from K at 45°
+backPoints["K'"] = getPointAlongLine(backPoints.K, backPoints.K.squareRight(1).squareUp(1), 1);
+
+// 52 I to K' to L'
+// drawEulerSpiral(
+//   backPoints.I,
+//   3,
+//   {
+//     isLeftHanded: true,
+//     rotation: 7*Math.PI/4,
+//     scale: 8
+//   }
+// );
+
+// 53 Fixing the curve
+// TODO: fixing the curve
+
+// 54 Grainline
+drawLine(
+  backPoints.E.squareRight(2).squareUp(1),
+  backPoints.G.squareRight(2).squareUp(-1)
+);
+// TODO: Make arrows for grainline
+
+// 55 mitre the dart
+// TODO: mitre the dart
+let [dartLegFoldToSideNew, dartMidPointNew, dartLegFoldAwaySideNew] = mitreDart(backPoints.S, backPoints.C, backPoints.J, backPoints["J'"], backPoints.I, backPoints);
+drawLine(backPoints.C, dartLegFoldToSideNew);
+drawLine(dartLegFoldToSideNew, dartMidPointNew);
+drawLine(dartMidPointNew, dartLegFoldAwaySideNew);
+drawLine(dartLegFoldAwaySideNew, backPoints.I);
+
+
+
+
+
+
+
+
+
+Object.keys(backPoints).forEach((key, index) => {
+  drawPoint(backPoints[key]);
+  drawPointLabel(backPoints[key], key);
+});
+Object.keys(frontPoints).forEach((key, index) => {
+  drawPoint(frontPoints[key]);
+  drawPointLabel(frontPoints[key], key, {color: '#900', dir: 'E'});
+});
+
+
+var x = canvas.width / 2;
+var y = canvas.height / 2;
+var radius = 75;
+var startAngle = 1.1 * Math.PI;
+var endAngle = 1.9 * Math.PI;
+var ccw = false;
+
+context.beginPath();
+context.arc(x, y, radius, startAngle, endAngle, ccw);
+context.strokeStyle = "#000";
+context.lineWidth = 30;
+context.stroke();
+    </script>
+  </body>
+</html>
