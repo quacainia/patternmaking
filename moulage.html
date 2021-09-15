@@ -36,258 +36,337 @@ let frontBottom = new Point([29,29]);
 drawLine(frontTop, frontBottom, GUIDE_LINE);
 drawLine(backTop, backBottom, GUIDE_LINE);
 
-// 3 R Across - Hip Line
-backPoints.R = getPointAlongLine(backBottom, backTop, 1);
-frontPoints.W = getPointAlongLine(frontBottom, frontTop, 1);
-drawLine(backPoints.R, frontPoints.W)
+function drawBackDraft(backPoints, frontPoints) {
+  // 3 R Across - Hip Line
+  backPoints.R = getPointAlongLine(backBottom, backTop, 1);
+  frontPoints.W = getPointAlongLine(frontBottom, frontTop, 1);
+  drawLine(backPoints.R, frontPoints.W)
 
-// 4 R to F + Square - Waist Measurement
-let waistLevel = 8 + 1/4;
-backPoints.F = getPointAlongLine(backPoints.R, backTop, waistLevel);
-frontPoints.J = getPointAlongLine(frontPoints.W, frontTop, waistLevel);
-drawLine(backPoints.F, frontPoints.J);
+  // 4 R to F + Square - Waist Measurement
+  let waistLevel = 8 + 1/4;
+  backPoints.F = getPointAlongLine(backPoints.R, backTop, waistLevel);
+  frontPoints.J = getPointAlongLine(frontPoints.W, frontTop, waistLevel);
+  drawLine(backPoints.F, frontPoints.J);
 
-// 5 F to G + Square - Half Hip
-let halfHipLevel = 3 + 3/4;
-backPoints.G = getPointAlongLine(backPoints.F, backPoints.R, halfHipLevel);
-frontPoints.Y = getPointAlongLine(frontPoints.J, frontPoints.W, halfHipLevel);
-drawLine(backPoints.G, frontPoints.Y);
+  // 5 F to G + Square - Half Hip
+  let halfHipLevel = 3 + 3/4;
+  backPoints.G = getPointAlongLine(backPoints.F, backPoints.R, halfHipLevel);
+  frontPoints.Y = getPointAlongLine(frontPoints.J, frontPoints.W, halfHipLevel);
+  drawLine(backPoints.G, frontPoints.Y);
 
-// 6 F to A - Neck Line
-let waistToNeck = 16 + 1/4;
-backPoints.A = getPointAlongLine(backPoints.F, backTop, waistToNeck);
+  // 6 F to A - Neck Line
+  let waistToNeck = 16 + 1/4;
+  backPoints.A = getPointAlongLine(backPoints.F, backTop, waistToNeck);
 
-// 7 F to E - Bust Level
-let bustLevel = 8;
-backPoints.E = getPointAlongLine(backPoints.F, backTop, bustLevel);
-frontPoints.R = getPointAlongLine(frontPoints.J, frontTop, bustLevel);
-drawLine(backPoints.E, frontPoints.R);
+  // 7 F to E - Bust Level
+  let bustLevel = 8;
+  backPoints.E = getPointAlongLine(backPoints.F, backTop, bustLevel);
+  frontPoints.R = getPointAlongLine(frontPoints.J, frontTop, bustLevel);
+  drawLine(backPoints.E, frontPoints.R);
 
-// 8 E to D - Crossback Level. Halfway from E to A
-let crossbackLevel = 4 + 1/8
-backPoints.D = getPointAlongLine(backPoints.E, backTop, crossbackLevel);
-frontPoints.G = getPointAlongLine(frontPoints.R, frontTop, crossbackLevel);
-drawLine(backPoints.D, frontPoints.G);
-drawLine(backPoints.D, backPoints.A);
+  // 8 E to D - Crossback Level. Halfway from E to A
+  let crossbackLevel = 4 + 1/8
+  backPoints.D = getPointAlongLine(backPoints.E, backTop, crossbackLevel);
+  frontPoints.G = getPointAlongLine(frontPoints.R, frontTop, crossbackLevel);
+  drawLine(backPoints.D, frontPoints.G);
+  drawLine(backPoints.D, backPoints.A);
 
-// 9 A to B - Back Neckline
-let necklineBase = 3;
-backPoints.B = backPoints.A.squareRight(necklineBase);
-drawLine(backPoints.B, backPoints.A, GUIDE_LINE);
+  // 9 A to B - Back Neckline
+  let necklineBase = 3;
+  backPoints.B = backPoints.A.squareRight(necklineBase);
+  drawLine(backPoints.B, backPoints.A, GUIDE_LINE);
 
-// 9 A to B - Back Neckline guide across
-let necklineHeight = 1;
-backPoints.C = backPoints.B.squareUp(necklineHeight);
-// 10 B to C - Back Neckline guide up
-drawLine(backPoints.B, backPoints.C, GUIDE_LINE);
-// 11 A to C - Neckline curve
-// drawEulerSpiral(
-//   backPoints.A,
-//   {
-//     endPoint: backPoints.C,
-//     initialT: 0,
-//     isLeftHanded: true,
-//     parallelStartPoint: backPoints.B,
-//     // scale: 3.3
-//   }
-// );
-drawEulerParallelStart(backPoints.A, backPoints.C, backPoints.B);
+  // 9 A to B - Back Neckline guide across
+  let necklineHeight = 1;
+  backPoints.C = backPoints.B.squareUp(necklineHeight);
+  // 10 B to C - Back Neckline guide up
+  drawLine(backPoints.B, backPoints.C, GUIDE_LINE);
+  // 11 A to C - Neckline curve
+  // drawEulerSpiral(
+  //   backPoints.A,
+  //   {
+  //     endPoint: backPoints.C,
+  //     initialT: 0,
+  //     isLeftHanded: true,
+  //     parallelStartPoint: backPoints.B,
+  //     // scale: 3.3
+  //   }
+  // );
+  drawEulerParallelStart(backPoints.A, backPoints.C, backPoints.B);
 
-// 12 D to W - Crossback
-let crossback = 8;
-backPoints.W = backPoints.D.squareRight(crossback);
+  // 12 D to W - Crossback
+  let crossback = 8;
+  backPoints.W = backPoints.D.squareRight(crossback);
 
-// 13 W to K
-backPoints.K = backPoints.W.addv(backPoints.E.subv(backPoints.D));
-drawLine(backPoints.W, backPoints.K, GUIDE_LINE);
+  // 13 W to K
+  backPoints.K = backPoints.W.addv(backPoints.E.subv(backPoints.D));
+  drawLine(backPoints.W, backPoints.K, GUIDE_LINE);
 
-// 14 W to H - Up from W
-let backNeck = 3 + 1/2;
-backPoints.H = backPoints.W.squareUp(backNeck);
-drawLine(backPoints.W, backPoints.H, GUIDE_LINE);
+  // 14 W to H - Up from W
+  let backNeck = 3 + 1/2;
+  backPoints.H = backPoints.W.squareUp(backNeck);
+  drawLine(backPoints.W, backPoints.H, GUIDE_LINE);
 
-// 15 H to H'
-backPoints["H'"] = backPoints.H.squareRight(1/2);
-backPoints["H'"].labelDir = "N";
+  // 15 H to H'
+  backPoints["H'"] = backPoints.H.squareRight(1/2);
+  backPoints["H'"].labelDir = "N";
 
-// 16 C to H' - Tracing Line
-// SKIP
+  // 16 C to H' - Tracing Line
+  // SKIP
 
-// 17 C to J - Along CH'
-let shoulder = 5 + 1/2;
-backPoints.J = getPointAlongLine(backPoints.C, backPoints["H'"], shoulder/2);
+  // 17 C to J - Along CH'
+  let shoulder = 5 + 1/2;
+  backPoints.J = getPointAlongLine(backPoints.C, backPoints["H'"], shoulder/2);
 
-// 18 J to J' - Dart Width
-let shoulderDartWidth = 1/2;
-backPoints["J'"] = getPointAlongLine(backPoints.J, backPoints["H'"], shoulderDartWidth);
+  // 18 J to J' - Dart Width
+  let shoulderDartWidth = 1/2;
+  backPoints["J'"] = getPointAlongLine(backPoints.J, backPoints["H'"], shoulderDartWidth);
 
-// 19 J' to I
-backPoints.I = getPointAlongLine(backPoints["J'"], backPoints["H'"], shoulder/2);
-backPoints.I.labelDir = "NE";
+  // 19 J' to I
+  backPoints.I = getPointAlongLine(backPoints["J'"], backPoints["H'"], shoulder/2);
+  backPoints.I.labelDir = "NE";
 
-// 20 F to F' - Center Back Intake
-let centerBackIntake = 1/4;
-backPoints["F'"] = backPoints.F.squareRight(centerBackIntake);
-backPoints["F'"].labelDir = "E";
+  // 20 F to F' - Center Back Intake
+  let centerBackIntake = 1/4;
+  backPoints["F'"] = backPoints.F.squareRight(centerBackIntake);
+  backPoints["F'"].labelDir = "E";
 
-// 21 D to F'
-drawLine(backPoints.D, backPoints["F'"]);
+  // 21 D to F'
+  drawLine(backPoints.D, backPoints["F'"]);
 
-// 22 F to R'
-let FRPrimeLength = -6;
-backPoints["R'"] = backPoints.F.squareUp(FRPrimeLength);
-drawLine(backPoints["R'"], backPoints.R);
+  // 22 F to R'
+  let FRPrimeLength = -6;
+  backPoints["R'"] = backPoints.F.squareUp(FRPrimeLength);
+  drawLine(backPoints["R'"], backPoints.R);
 
-// 23 F' to R'
-drawLine(backPoints["F'"], backPoints["R'"]);
+  // 23 F' to R'
+  drawLine(backPoints["F'"], backPoints["R'"]);
 
-// 24 F' to N - To Waist Dart
-let waist = 7 + 3/4;
-backPoints.N = backPoints["F'"].squareRight(waist/2);
+  // 24 F' to N - To Waist Dart
+  let waist = 7 + 3/4;
+  backPoints.N = backPoints["F'"].squareRight(waist/2);
 
-// 25 N to N' - Waist Dart
-let waistDart = 1;
-backPoints["N'"] = backPoints.N.squareRight(waistDart);
-backPoints["N'"].labelDir = "E";
+  // 25 N to N' - Waist Dart
+  let waistDart = 1;
+  backPoints["N'"] = backPoints.N.squareRight(waistDart);
+  backPoints["N'"].labelDir = "E";
 
-// 26 N to N'' - Center of Waist Dart
-backPoints["N''"] = backPoints.N.squareRight(waistDart/2);
-backPoints["N''"].labelDir = "N";
+  // 26 N to N'' - Center of Waist Dart
+  backPoints["N''"] = backPoints.N.squareRight(waistDart/2);
+  backPoints["N''"].labelDir = "N";
 
-// 27 N' to O - Waistline
-backPoints.O = backPoints["N'"].squareRight(waist/2);
-backPoints.O.labelDir = "E";
+  // 27 N' to O - Waistline
+  backPoints.O = backPoints["N'"].squareRight(waist/2);
+  backPoints.O.labelDir = "E";
 
-// 28 O to I' - End of Shoulder
-let endOfShoulder = 15 + 1/2;
-backPoints["I'"] = getPointAlongLine(backPoints.O, backPoints.I, endOfShoulder);
-backPoints["I'"].labelDir = "SE";
+  // 28 O to I' - End of Shoulder
+  let endOfShoulder = 15 + 1/2;
+  backPoints["I'"] = getPointAlongLine(backPoints.O, backPoints.I, endOfShoulder);
+  backPoints["I'"].labelDir = "SE";
 
-// 29 C to I'
-// SKIP
+  // 29 C to I'
+  // SKIP
 
-// 30 C to J - Along CI'
-backPoints.J = getPointAlongLine(backPoints.C, backPoints["I'"], shoulder/2);
-backPoints.J.labelDir = "SW";
-drawLine(backPoints.C, backPoints.J);
+  // 30 C to J - Along CI'
+  backPoints.J = getPointAlongLine(backPoints.C, backPoints["I'"], shoulder/2);
+  backPoints.J.labelDir = "SW";
+  drawLine(backPoints.C, backPoints.J);
 
-// 31 J to J'
-backPoints["J'"] = getPointAlongLine(backPoints.J, backPoints["I'"], shoulderDartWidth);
-backPoints["J'"].labelDir = "SE";
-drawLine(backPoints["J'"], backPoints.I);
+  // 31 J to J'
+  backPoints["J'"] = getPointAlongLine(backPoints.J, backPoints["I'"], shoulderDartWidth);
+  backPoints["J'"].labelDir = "SE";
+  drawLine(backPoints["J'"], backPoints.I);
 
-// 32 J' to I
-backPoints.I = getPointAlongLine(backPoints["J'"], backPoints["I'"], shoulder/2);
-backPoints.I.labelDir = "NE";
+  // 32 J' to I
+  backPoints.I = getPointAlongLine(backPoints["J'"], backPoints["I'"], shoulder/2);
+  backPoints.I.labelDir = "NE";
 
-// 29 C to I - but better
-drawLine(backPoints.C, backPoints.I, GUIDE_LINE);
+  // 29 C to I - but better
+  drawLine(backPoints.C, backPoints.I, GUIDE_LINE);
 
-// 33 J to N
-drawLine(backPoints.J, backPoints.N, GUIDE_LINE);
+  // 33 J to N
+  drawLine(backPoints.J, backPoints.N, GUIDE_LINE);
 
-// 34 J to S
-let shoulderDartLength = 3 + 1/2;
-backPoints.S = getPointAlongLine(backPoints.J, backPoints.N, shoulderDartLength);
-drawLine(backPoints.J, backPoints.S);
+  // 34 J to S
+  let shoulderDartLength = 3 + 1/2;
+  backPoints.S = getPointAlongLine(backPoints.J, backPoints.N, shoulderDartLength);
+  drawLine(backPoints.J, backPoints.S);
 
-// 35 T - Inersection of Bust Line and JN
-backPoints.T = getIntersection(backPoints.J, backPoints.N, backPoints.E, backPoints.K);
+  // 35 T - Inersection of Bust Line and JN
+  backPoints.T = getIntersection(backPoints.J, backPoints.N, backPoints.E, backPoints.K);
 
-// 36 T to T' - 1" toward N
-let waistDartBustOffset = 1
-backPoints["T'"] = getPointAlongLine(backPoints.T, backPoints.N, waistDartBustOffset);
-drawLine(backPoints["T'"], backPoints.N);
+  // 36 T to T' - 1" toward N
+  let waistDartBustOffset = 1
+  backPoints["T'"] = getPointAlongLine(backPoints.T, backPoints.N, waistDartBustOffset);
+  drawLine(backPoints["T'"], backPoints.N);
 
-// 37 J' to S - A slight curver, or straight
-drawLine(backPoints.S, backPoints["J'"])
+  // 37 J' to S - A slight curver, or straight
+  drawLine(backPoints.S, backPoints["J'"])
 
-// 38 N' to T'
-drawLine(backPoints["N'"], backPoints["T'"])
+  // 38 N' to T'
+  drawLine(backPoints["N'"], backPoints["T'"])
 
-// 39 N'' to V
-let waistDartBottomLength = 4 + 1/2;
-backPoints.V = backPoints["N''"].squareUp(- waistDartBottomLength);
+  // 39 N'' to V
+  let waistDartBottomLength = 4 + 1/2;
+  backPoints.V = backPoints["N''"].squareUp(- waistDartBottomLength);
 
-// 40 N to V
-drawLine(backPoints.N, backPoints.V);
+  // 40 N to V
+  drawLine(backPoints.N, backPoints.V);
 
-// 41 N' to V
-drawLine(backPoints["N'"], backPoints.V);
+  // 41 N' to V
+  drawLine(backPoints["N'"], backPoints.V);
 
-// 42 G' to P
-let halfHip = 8 + 1/4;
-backPoints["G'"] = getIntersection(backPoints.G, frontPoints.Y, backPoints["F'"], backPoints["R'"]);
-backPoints["G'"].labelDir = "NE";
-pointPPrime = getIntersection(backPoints.N, backPoints.V, backPoints.G, frontPoints.Y);
-pointPDoublePrime = getIntersection(backPoints["N'"], backPoints.V, backPoints.G, frontPoints.Y);
-backPoints.P = backPoints["G'"].squareRight(halfHip + pointPPrime.distTo(pointPDoublePrime))
+  // 42 G' to P
+  let halfHip = 8 + 1/4;
+  backPoints["G'"] = getIntersection(backPoints.G, frontPoints.Y, backPoints["F'"], backPoints["R'"]);
+  backPoints["G'"].labelDir = "NE";
+  pointPPrime = getIntersection(backPoints.N, backPoints.V, backPoints.G, frontPoints.Y);
+  pointPDoublePrime = getIntersection(backPoints["N'"], backPoints.V, backPoints.G, frontPoints.Y);
+  backPoints.P = backPoints["G'"].squareRight(halfHip + pointPPrime.distTo(pointPDoublePrime))
 
-// 43 R to Q
-let hip = 9 + 1/4;
-backPoints.Q = backPoints.R.squareRight(hip);
+  // 43 R to Q
+  let hip = 9 + 1/4;
+  backPoints.Q = backPoints.R.squareRight(hip);
 
-// 44 O to Q'
-let initialAngleQO = backPoints.Q.getAngle(backPoints.Q.squareUp(1));
-drawEulerPerpendicularWithPointInside(
-  backPoints.O, backPoints.P, [backPoints.R, backPoints.Q], initialAngleQO, {isLeftHanded: true}
-);
+  // 44 O to Q'
+  let initialAngleQO = backPoints.Q.getAngle(backPoints.Q.squareUp(1));
+  drawEulerPerpendicularWithPointInside(
+    backPoints.O, backPoints.P, [backPoints.R, backPoints.Q], initialAngleQO, {isLeftHanded: true}
+  );
 
-// 45 E' to L
-let bust = 9 + 1/2;
-backPoints["E'"] = getIntersection(backPoints.E, backPoints.T, backPoints.D, backPoints["F'"]);
-backPoints["E'"].labelDir = "NE";
-backPoints.L = backPoints["E'"].squareRight(bust);
+  // 45 E' to L
+  let bust = 9 + 1/2;
+  backPoints["E'"] = getIntersection(backPoints.E, backPoints.T, backPoints.D, backPoints["F'"]);
+  backPoints["E'"].labelDir = "NE";
+  backPoints.L = backPoints["E'"].squareRight(bust);
 
-// 46 L to L'
-let bustEase = 1/4;
-backPoints["L'"] = backPoints.L.squareRight(bustEase);
-backPoints["L'"].labelDir = "NE";
+  // 46 L to L'
+  let bustEase = 1/4;
+  backPoints["L'"] = backPoints.L.squareRight(bustEase);
+  backPoints["L'"].labelDir = "NE";
 
-// 47 O to L
-drawLine(backPoints.O, backPoints.L, GUIDE_LINE);
+  // 47 O to L
+  drawLine(backPoints.O, backPoints.L, GUIDE_LINE);
 
-// 48 O to M
-backPoints.M = getPointAlongLine(backPoints.O, backPoints.L, backPoints.O.distTo(backPoints.L)/3);
-backPoints.M.labelDir = "E"
+  // 48 O to M
+  backPoints.M = getPointAlongLine(backPoints.O, backPoints.L, backPoints.O.distTo(backPoints.L)/3);
+  backPoints.M.labelDir = "E"
 
-// 49 M to M'
-let mOffset = 1/4;
-backPoints["M'"] = backPoints.M.squareRight(- mOffset);
+  // 49 M to M'
+  let mOffset = 1/4;
+  backPoints["M'"] = backPoints.M.squareRight(- mOffset);
 
-// 50 L' to M' to O
-drawEulerMidpoint(
-  backPoints["L'"],
-  backPoints["M'"],
-  backPoints.O
-);
+  // 50 L' to M' to O
+  drawEulerMidpoint(
+    backPoints["L'"],
+    backPoints["M'"],
+    backPoints.O
+  );
 
-// 51 K to K' - K' is 1" way from K at 45°
-backPoints["K'"] = getPointAlongLine(backPoints.K, backPoints.K.squareRight(1).squareUp(1), 1);
+  // 51 K to K' - K' is 1" way from K at 45°
+  backPoints["K'"] = getPointAlongLine(backPoints.K, backPoints.K.squareRight(1).squareUp(1), 1);
 
-// 52 I to K' to L'
-// 53 Fixing the curve to be the right length
-let armhole = 8 + 7/8;
-drawEulerOfMeasurementWithInsidePoint(
-  backPoints.I,
-  backPoints["K'"],
-  backPoints["L'"],
-  armhole
-);
+  // 52 I to K' to L'
+  // 53 Fixing the curve to be the right length
+  let armhole = 8 + 7/8;
+  drawEulerOfMeasurementWithInsidePoint(
+    backPoints.I,
+    backPoints["K'"],
+    backPoints["L'"],
+    armhole
+  );
 
-// 54 Grainline
-drawLine(
-  backPoints.E.squareRight(2).squareUp(1),
-  backPoints.G.squareRight(2).squareUp(-1)
-);
-// TODO: Make arrows for grainline
+  // 54 Grainline
+  drawLine(
+    backPoints.E.squareRight(2).squareUp(1),
+    backPoints.G.squareRight(2).squareUp(-1)
+  );
+  // TODO: Make arrows for grainline
 
-// 55 mitre the dart
-let mitredMidPoint = mitreDart(backPoints.S, backPoints.C, backPoints.J, backPoints["J'"]);
-backPoints["J''"] = mitredMidPoint;
-backPoints["J''"].labelDir = "N";
-drawLine(backPoints.J, mitredMidPoint);
-drawLine(mitredMidPoint, backPoints["J'"]);
+  // 55 mitre the dart
+  let mitredMidPoint = mitreDart(backPoints.S, backPoints.C, backPoints.J, backPoints["J'"]);
+  backPoints["J''"] = mitredMidPoint;
+  backPoints["J''"].labelDir = "N";
+  drawLine(backPoints.J, mitredMidPoint);
+  drawLine(mitredMidPoint, backPoints["J'"]);
+}
+
+function drawFrontDraft(backPoints, frontPoints) {
+  let isMasculine = true;
+
+  // 9 J to A
+  let frontLength = 14 + 1/2;
+  frontPoints.A = frontPoints.J.squareUp(frontLength);
+  drawLine(frontPoints.J, frontPoints.A);
+
+  // 10 A to B
+  let frontNeck = 2 + 3/4;
+  frontPoints.B = frontPoints.A.squareRight(-frontNeck);
+  drawLine(frontPoints.A, frontPoints.B, GUIDE_LINE);
+
+  // 11 B to C
+  let frontNeckVert = frontNeck + 1/4;
+  frontPoints.C = frontPoints.B.squareUp(frontNeck);
+  drawLine(frontPoints.B, frontPoints.C, GUIDE_LINE);
+
+  // 12 B to D
+  frontPoints.D = getPointAlongLine(frontPoints.B, frontPoints.C, frontNeckVert/2);
+
+  // 13 D to E
+  let frontShoulderGuide = (isMasculine) ? 7 : 6;
+  frontPoints.E = frontPoints.D.squareRight(- frontShoulderGuide);
+  drawLine(frontPoints.D, frontPoints.E, GUIDE_LINE);
+
+  // 14 B to B'
+  let neckGuideLength = 5/8;
+  frontPoints["B'"] = getPointAlongLine(frontPoints.B, frontPoints.B.addv(new Point([1,-1])), neckGuideLength);
+  drawLine(frontPoints.B, frontPoints["B'"], GUIDE_LINE);
+
+  // 15 C to A
+  // TODO: Neckline
+
+  // 16 C to E
+  drawLine(frontPoints.C, frontPoints.E, GUIDE_LINE);
+
+  // 17 C to F
+  let shoulder = 5 + 1/2;
+  frontPoints.F = getPointAlongLine(frontPoints.C, frontPoints.E, shoulder/2);
+
+  // 18 F to F'
+  let shoulderDartWidth = (isMasculine) ? 0 : 1/2;
+  frontPoints["F'"] = getPointAlongLine(frontPoints.F, frontPoints.E, shoulderDartWidth);
+  if (isMasculine) {
+    // TODO: do not draw points with this tag
+    frontPoints["F'"].doNotDraw = true;
+  }
+
+  // 19 F' to E'
+  frontPoints["E'"] = getPointAlongLine(frontPoints["F'"], frontPoints.E, shoulder/2);
+
+  // 20 J to K
+  let figureWidthCalc = 4 + 3/8;
+  frontPoints.K = frontPoints.J.squareRight(- figureWidthCalc);
+  frontPoints.K.labelDir = "N";
+
+  // 21 K to K''
+  let waistDartWidth = 1/2;
+  frontPoints["K''"] = frontPoints.K.squareRight(waistDartWidth / 2);
+
+  // 22 K' to K''
+  frontPoints["K'"] = frontPoints.K.squareRight(- waistDartWidth / 2);
+  frontPoints["K'"].labelDir = "W";
+
+  // 23 J to O
+  let waistFront = 8 + 3/4;
+  frontPoints.O = frontPoints.J.squareRight(- (waistFront + waistDartWidth));
+
+  // 24 K up
+  let guidePoint = frontPoints.K.squareUp(frontPoints.J.distTo(frontPoints.G));
+  drawLine(frontPoints.K, guidePoint, GUIDE_LINE);
+
+  // 25 A to L
+  // TODO: Get point on line a distance fron another point
+}
 
 
 
@@ -296,6 +375,9 @@ drawLine(mitredMidPoint, backPoints["J'"]);
 
 
 
+
+drawBackDraft(backPoints, frontPoints);
+drawFrontDraft(backPoints, frontPoints);
 
 Object.keys(backPoints).forEach((key, index) => {
   drawPoint(backPoints[key]);
