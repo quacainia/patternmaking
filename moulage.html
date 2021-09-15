@@ -252,35 +252,6 @@ let mOffset = 1/4;
 backPoints["M'"] = backPoints.M.squareRight(- mOffset);
 
 // 50 L' to M' to O
-// drawEulerSpiral(
-//   backPoints["L'"],
-//   1,
-//   {isLeftHanded: true}
-// );
-
-// let p = new Point([0,0]);
-// console.log(p.getAngle(new Point([1,0])));
-// console.log(p.getAngle(new Point([1,1])));
-// console.log(p.getAngle(new Point([0,1])));
-// console.log(p.getAngle(new Point([-1,1])));
-// console.log(p.getAngle(new Point([-1,0])));
-// console.log(p.getAngle(new Point([-1,-1])));
-// console.log(p.getAngle(new Point([0,-1])));
-// console.log(p.getAngle(new Point([1,-1])));
-// console.log(p.getAngle(new Point([1,0])));
-// backPoints.ARF = new Point([10, .072]);
-// foo = new Point([10, .098]);
-// backPoints.BARF = getPointAlongLine(backPoints.ARF, foo, 1);
-// console.log(backPoints.ARF.getAngle(foo))
-
-// drawEulerSpiralThreePoint(
-//   backPoints["L'"],
-//   backPoints["M'"],
-//   backPoints.O,
-//   {
-//     isLeftHanded: true,
-//   }
-// );
 drawEulerMidpoint(
   backPoints["L'"],
   backPoints["M'"],
@@ -291,15 +262,13 @@ drawEulerMidpoint(
 backPoints["K'"] = getPointAlongLine(backPoints.K, backPoints.K.squareRight(1).squareUp(1), 1);
 
 // 52 I to K' to L'
-// drawEulerSpiral(
-//   backPoints.I,
-//   3,
-//   {
-//     isLeftHanded: true,
-//     rotation: 7*Math.PI/4,
-//     scale: 8
-//   }
-// );
+let armhole = 8 + 7/8;
+drawEulerOfMeasurementWithInsidePoint(
+  backPoints.I,
+  backPoints["K'"],
+  backPoints["L'"],
+  armhole
+);
 
 // 53 Fixing the curve
 // TODO: fixing the curve

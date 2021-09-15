@@ -148,66 +148,132 @@ function chooseEulerSize(dist) {
 }
 
 function getEuler(options) {
-  let {isLeftHanded, length, lengthParallel, N, rotationAngle, scale, startPoint, t0} = Object.assign(
+  /*
+  Options:
+  - isLeftHanded
+    - Whether the curve should bend left (ccw) or right (cw)
+  - length
+    - Straight line distance that the curve should stop at
+  - lengthParallel
+    - Alternative to length. Distance of final point to a line passing through
+      the start point at an angle perpendicular to the start angle.
+  - maxPoints
+    - Maximum number of points to plot in the curve
+  - measureLength
+    - Return the length along the curve.
+  - rotationAngle
+    - Angle to rotate curve by around the start poin
+  - scale
+    - Scale of the curve
+  - startPoint
+    - Initial point the curve starts at
+  - t0
+    - The initial t value to start the curve at. This affects the intial angle.
+  - tReverse
+    - Value of t at which to reverse the curve and start plotting it in the
+      negative direction
+  */
+  let {
+    isLeftHanded,
+    length,
+    lengthParallel,
+    maxPoints,
+    measureLength,
+    rotationAngle,
+    scale,
+    startPoint,
+    t0,
+    tReverse
+  } = Object.assign(
     {},
     {
       isLeftHanded: false,
       length: null,
       lengthParallel: null,
-      N: 1000,
+      maxPoints: 1000,
+      measureLength: false,
       rotationAngle: 0,
       scale: EULER_SCALE_STD,
       startPoint: new Point([0, 0]),
       t0: 0,
+      tReverse: null,
     },
     options
   );
   let T = 2, dt = 0.002, t = t0, prevValue = {x: 0, y: 0}, prevDist,
-      pointList = [startPoint], currentDist, startAngle;
+      eulerPointsList = [startPoint], currentDist, startAngle, N = maxPoints-1,
+      distance = 0, reverseAngle, flip = false, currentValue = prevValue, midPoint,
+      compensationAngle;
 
   while (N--) {
-    let currentValue, currentPoint, dx, dy,plotPoint, linePoint,
-        scalePoint;
+    let currentPoint, dx, dy,plotPoint, linePoint,
+        scalePoint, tSq;
 
-    dx = Math.cos(t*t) * dt;
-    dy = Math.sin(t*t) * dt;
+    if (tReverse && t > tReverse) {
+      tSq = (2*tReverse - t) ** 2;
+      if (!midPoint) {
+        let angle;
+        midPoint = eulerPointsList[eulerPointsList.length - 1];
+        flip = true;
+        angle = (new Point([prevValue.x, prevValue.y])).getAngle(new Point([currentValue.x, currentValue.y]));
+        compensationAngle = 2 * (((angle + 2*Math.PI) % Math.PI) - Math.PI/2);
+      }
+    } else {
+      tSq = t*t;
+    }
+
+    dx = Math.cos(tSq) * dt;
+    dy = Math.sin(tSq) * dt;
     t += dt;
+    prevValue = currentValue;
     currentValue = {
-      x: prevValue.x + dx,
-      y: prevValue.y + dy * (isLeftHanded ? -1 : 1)
+      x: prevValue.x + dx * (flip ? -1 : 1),
+      y: prevValue.y + dy * (isLeftHanded ? -1 : 1),
     };
     currentPoint = new Point([currentValue.x, currentValue.y]);
     scalePoint = currentPoint.mult(scale);
     linePoint = startPoint.addv(scalePoint);
+    if (midPoint && compensationAngle) {
+      linePoint = linePoint.rotate(midPoint, compensationAngle);
+    }
     if ((rotationAngle + 2*Math.PI) % (2*Math.PI) !== 0) {
       plotPoint = linePoint.rotate(startPoint, rotationAngle);
     } else {
       plotPoint = linePoint;
     }
-    pointList.push(plotPoint);
+    eulerPointsList.push(plotPoint);
+    if (measureLength) {
+      // TODO: Rename distance, it's such an ambiguous name.
+      distance += plotPoint.distTo(eulerPointsList[eulerPointsList.length-2]);
+    }
 
-    currentDist = startPoint.distTo(linePoint);
+
+    currentDist = startPoint.distTo(plotPoint);
     if (lengthParallel) {
       if (!startAngle) {
-        startAngle = startPoint.getAngle(pointList[1]);
+        startAngle = startPoint.getAngle(eulerPointsList[1]);
       }
       let pointAngle = startAngle - startPoint.getAngle(plotPoint);
       if (currentDist * Math.cos(pointAngle) >= lengthParallel) {
-        return pointList;
+        return {eulerPointsList, distance, tMax: t};
       }
     } else if (currentDist >= length) {
-      return pointList;
+      return {eulerPointsList, distance, tMax: t};
+    } else if (currentDist < prevDist) {
+      // TODO: Include this in the renaming of distance / length
+      return {error: 'maxLengthError', eulerPointsList, currentDist, tMax: t, distance};
     }
-    prevValue = currentValue;
+    prevDist = currentDist;
   }
-  if (N > 0 && length && currentDist < length) {
-    return null;
+  if (isNaN(eulerPointsList[eulerPointsList.length-1].x) || isNaN(eulerPointsList[eulerPointsList.length-1].y)) {
+    // console.error("NaN values in Euler Spiral");
+    return {error: 'containsNaNValues'};
   }
-  if (isNaN(pointList[pointList.length-1].x) || isNaN(pointList[pointList.length-1].y)) {
-    console.error("NaN values in Euler Spiral");
-    return null;
+  if (length && maxPoints === 1000) {
+    // console.log('end');
+    return {error: 'ranOutOfPoints'};
   }
-  return pointList;
+  return {eulerPointsList, distance, tMax: t};
 }
 
 function chooseEulerLeftHanded(startPoint, endPoint, options) {
@@ -236,14 +302,14 @@ function chooseEulerLeftHanded(startPoint, endPoint, options) {
 }
 
 function getEulerInitialAngle(options) {
-  let newOptions = Object.assign({}, options, {N: 1, rotationAngle: 0});
-  pointList = getEuler(newOptions);
+  let newOptions = Object.assign({}, options, {maxPoints: 2, rotationAngle: 0});
+  let {eulerPointsList} = getEuler(newOptions);
 
-  return pointList[0].getAngle(pointList[1]);
+  return eulerPointsList[0].getAngle(eulerPointsList[1]);
 }
 
 function drawEulerParallelStart(startPoint, endPoint, parallelStartPoint) {
-  let dist, endAngle, isLeftHanded, pointList, rotationAngle, scale, t0 = 0;
+  let dist, endAngle, isLeftHanded, iter, curvePoints, rotationAngle, scale, t0 = 0;
 
   scale = chooseEulerSize(startPoint.distTo(endPoint));
   rotationAngle = startPoint.getAngle(parallelStartPoint);
@@ -255,6 +321,10 @@ function drawEulerParallelStart(startPoint, endPoint, parallelStartPoint) {
 
   for (let i = 1; i<=8; i++) {
     let angleDiff, lastPoint;
+
+    if (iter > 10) {
+      throw "runaway loop";
+    }
 
     options = {
       isLeftHanded,
@@ -269,13 +339,15 @@ function drawEulerParallelStart(startPoint, endPoint, parallelStartPoint) {
 
     options.rotationAngle = rotationAngle-initialAngleEuler;
 
-    pointList = getEuler(options);
-    lastPoint = pointList[pointList.length-1];
+    let {eulerPointsList} = getEuler(options);
+    curvePoints = eulerPointsList;
+    lastPoint = curvePoints[curvePoints.length-1];
 
-    if (!pointList) {
+    if (!curvePoints) {
       scale *= 1.25;
       t0 = 0;
       i = 0;
+      iter++;
       continue;
     }
 
@@ -293,17 +365,18 @@ function drawEulerParallelStart(startPoint, endPoint, parallelStartPoint) {
       scale += 1.25;
       t0 = 0;
       i = 0;
+      iter++;
       continue;
     }
   }
 
   context.beginPath();
-  pointList.forEach(point => context.lineTo(...point.canvas()));
+  curvePoints.forEach(point => context.lineTo(...point.canvas()));
   context.stroke();
 }
 
 function drawEulerMidpoint(startPoint, midPoint, endPoint) {
-  let dist, endAngle, isLeftHanded, pointList, scale, t0 = 0;
+  let dist, endAngle, isLeftHanded, iter = 0, pointList, scale, t0 = 0;
 
   scale = chooseEulerSize(startPoint.distTo(endPoint));
   isLeftHanded = chooseEulerLeftHanded(startPoint, endPoint, {midPoint});
@@ -312,13 +385,11 @@ function drawEulerMidpoint(startPoint, midPoint, endPoint) {
   context.lineWidth = 3;
   context.strokeStyle = "#000";
 
-  iter = 0;
-
   for (let i = 1; i<=8; i++) {
     let angleDiff, lastPoint;
 
     if (iter > 10) {
-      console.error("Something went wrong!");
+      throw "drawEulerMidpoint: Too many iterations.";
       break;
     }
 
@@ -329,22 +400,26 @@ function drawEulerMidpoint(startPoint, midPoint, endPoint) {
       startPoint,
       t0,
     }
-    pointList = getEuler(options);
+    let {eulerPointsList} = getEuler(options);
 
-    if (!pointList) {
-      scale *= 1.25;
-      t0 = 0;
-      i = 0;
-      iter += 1;
+    if (!eulerPointsList) {
+      if (i > 1) {
+        t0 = t0 - (0.5**i);
+      }
+      if (i === 1 || t0 < 0) {
+        scale *= 1.25;
+        t0 = 0;
+        i = 1;
+        iter += 1;
+      }
+      i--;
       continue;
     }
 
     // rotate points
-    let rotateAngle = startPoint.getAngle(pointList[pointList.length-1]) - endAngle;
+    let rotateAngle = startPoint.getAngle(eulerPointsList[eulerPointsList.length-1]) - endAngle;
+    pointList = eulerPointsList.map(point => point.rotate(startPoint, -rotateAngle));
 
-    for (let p = 0; p<pointList.length; p++) {
-      pointList[p] = pointList[p].rotate(startPoint, -rotateAngle);
-    }
     // // for each point if point is still "inside"
     let isPointInCurve = true;
     for (let p=0; p<pointList.length/10; p++) {
@@ -374,7 +449,6 @@ function drawEulerMidpoint(startPoint, midPoint, endPoint) {
       iter += 1;
       continue;
     }
-    t = 0;
   }
   context.beginPath();
   pointList.forEach(point => context.lineTo(...point.canvas()));
@@ -396,8 +470,8 @@ function drawEulerPerpendicularWithPointInside(endPoint, insidePoint, startLine,
   if (isLeftHanded === undefined) {
     isLeftHanded = chooseEulerLeftHanded(insidePoint, endPoint, {initialAngle});
   }
-  context.lineWidth = 1;
-  context.strokeStyle = "#F00";
+  context.lineWidth = 3;
+  context.strokeStyle = "#000";
 
   iter = 0;
 
@@ -422,10 +496,10 @@ function drawEulerPerpendicularWithPointInside(endPoint, insidePoint, startLine,
 
     options.rotationAngle = initialAngle-initialAngleEuler;
 
-    eulerPointList = getEuler(options);
-    lastPoint = eulerPointList[eulerPointList.length-1];
+    let {eulerPointsList} = getEuler(options);
+    lastPoint = eulerPointsList[eulerPointsList.length-1];
 
-    if (!eulerPointList) {
+    if (!eulerPointsList) {
       scale *= 1.25;
       t0 = 0;
       i = 0;
@@ -434,8 +508,7 @@ function drawEulerPerpendicularWithPointInside(endPoint, insidePoint, startLine,
     }
 
     // move points
-
-    pointList = eulerPointList.map(point => point.addv(endPoint).subv(lastPoint));
+    pointList = eulerPointsList.map(point => point.addv(endPoint).subv(lastPoint));
 
     // console.error('foo');
     // return;
@@ -478,173 +551,111 @@ function drawEulerPerpendicularWithPointInside(endPoint, insidePoint, startLine,
   context.stroke();
 }
 
-function drawEulerSpiral(startPoint, options) {
-  let {
-    endPoint,
-    initialT,
-    isLeftHanded,
-    parallelStartPoint,
-    rotation,
-    scale
-  } = Object.assign(
-    {},
-    {
-      endPoint: null,
-      initialT: 0,
-      isLeftHanded: false,
-      parallelStartPoint: null,
-      rotation: 0,
-      scale: EULER_SCALE_STD,
-    },
-    options
-  );
-  let dx, dy, t=0, current, N=1000, T=3;
-  let dt = T/N;
-  let lastDist = 0;
-  context.lineWidth = 1;
-  context.strokeStyle = "#f00";
+function drawEulerOfMeasurementWithInsidePoint(startPoint, insidePoint, endPoint, measurement, maxFarAngle) {
+  let dist, endAngle, isLeftHanded, iter = 0, pointList, scale, t0 = 0, 
+      t0Delta = 0.1, tReverse, options;
+  const ITERATIONS = 5;
+  // startPoint = startPoint.addv(new Point([0, 5]));
+  // endPoint = endPoint.addv(new Point([0, 5]))
 
-  if (parallelStartPoint) {
-    rotation = startPoint.getAngle(parallelStartPoint);
-  }
+  scale = chooseEulerSize(startPoint.distTo(endPoint));
+  isLeftHanded = chooseEulerLeftHanded(startPoint, endPoint, {midPoint: insidePoint});
+  dist = startPoint.distTo(endPoint);
+  endAngle = startPoint.getAngle(endPoint);
+  context.lineWidth = 3;
+  context.strokeStyle = "#000";
 
-  let pathDist = startPoint.distTo(endPoint);
-  let pointList;
+  for (let i = 1; i<=ITERATIONS; i++) {
+    let angleDiff, lastPoint;
 
-  for (let i = 1; i<=8; i++) {
-    let prev = {x:0, y:0}, rotationAngle=rotation;
-    if (t !== 0) {
-      let point1 = new Point([0,0])
-      let dx = Math.cos(t*t)*dt;
-      let dy = Math.sin(t*t)*dt;
-      let point2 = new Point([dx, dy]);
-      rotDiff = point1.getAngle(point2);
-      rotationAngle -= rotDiff;
-    }
-    N=1000
-    let plotPoint = startPoint;
-    pointList = [startPoint];
-    while (N--) {
-      dx = Math.cos(t*t) * dt;
-      dy = Math.sin(t*t) * dt;
-      t += dt;
-      current = {
-        x: prev.x + dx,
-        y: prev.y + dy * (isLeftHanded ? -1 : 1)
-      };
-      currentPoint = new Point([current.x, current.y])
-      scalePoint = currentPoint.mult(scale);
-      linePoint = startPoint.addv(scalePoint);
-      if (rotationAngle % (2*Math.PI) !== 0) {
-        plotPoint = linePoint.rotate(startPoint, -rotationAngle);
-      } else {
-        plotPoint = linePoint;
-      }
-      prev = current;
-
-      let newDist = startPoint.distTo(linePoint);
-      if (startPoint.distTo(plotPoint) > pathDist) {
-        if (startPoint.getAngle(endPoint) <  startPoint.getAngle(plotPoint)) {
-          initialT = t = initialT - (0.5**i);
-        } else {
-          initialT = t = initialT + (0.5**i);
-        }
-        break;
-      }
-      pointList.push(plotPoint);
-    }
-    if (endPoint.distTo(pointList[pointList.length - 2]) < 0.0625 || endPoint.distTo(plotPoint) < 0.0625) {
+    if (iter > 10) {
+      console.error("Something went wrong!");
       break;
     }
-  }
 
+    options = {
+      isLeftHanded,
+      length: dist,
+      measureLength: true,
+      scale,
+      startPoint,
+      t0,
+      tReverse
+    }
+    let euler = getEuler(options);
+    let {eulerPointsList, distance, error, tMax} = euler;
+
+    if (error) {
+      tReversePct = 0.5
+      for (let ii = 1; ii <=10; ii++) {
+        options.tReverse = tMax * tReversePct;
+
+        let innerEuler = getEuler(options);
+
+        // // rotate points
+        let rotateAngle = startPoint.getAngle(innerEuler.eulerPointsList[innerEuler.eulerPointsList.length-1]) - endAngle;
+        pointList = innerEuler.eulerPointsList.map(point => point.rotate(startPoint, -rotateAngle));
+
+        distance = innerEuler.distance;
+        if (Math.abs(distance - measurement) < 1/16) {
+          break;
+        }
+        if (innerEuler.error || distance < measurement) {
+          tReversePct += 0.5 ** (ii+1);
+        } else {
+          tReversePct -= 0.5 ** (ii+1);
+        }
+      }
+      tReverse = tMax * .75;
+    } else {
+      // // rotate points
+      let rotateAngle = startPoint.getAngle(eulerPointsList[eulerPointsList.length-1]) - endAngle;
+      pointList = eulerPointsList.map(point => point.rotate(startPoint, -rotateAngle));
+    }
+
+    let {isPointInCurve} = getPointInsideCurve(pointList, insidePoint)
+    if (isPointInCurve && Math.abs(distance - measurement) < 1/16) {
+      break;
+    } else if (distance < measurement) {
+      t0 = t0 + (t0Delta);
+    } else {
+      t0Delta /= 2;
+      t0 = t0 - (t0Delta);
+    }
+    if (i === ITERATIONS) {
+      console.error("Ran out of iterations");
+      pointList = null;
+      // TODO: lower EL'
+    }
+  }
   context.beginPath();
   pointList.forEach(point => context.lineTo(...point.canvas()));
   context.stroke();
 }
 
-function drawEulerSpiralThreePoint(startPoint, midPoint, endPoint) {
-  let initialT = 0, T = 3, dt = T/1000, isLeftHanded = true, scale = EULER_SCALE_STD,
-      pointList, pathDist = startPoint.distTo(endPoint);
-  for (let i = 1; i<=8; i++) {
-    let N=1000, prevValue = {x:0, y:0}, currentPoint = startPoint,
-        lastDist = 0;
-    pointList = [];
-    t=initialT;
-    while (N--) {
-      dx = Math.cos(t*t) * dt;
-      dy = Math.sin(t*t) * dt;
-      t += dt;
-      currentValue = {
-        x: prevValue.x + dx,
-        y: prevValue.y + dy * (isLeftHanded ? -1 : 1)
-      };
-      currentPoint = new Point([currentValue.x, currentValue.y])
-      scalePoint = currentPoint.mult(scale);
-      linePoint = startPoint.addv(scalePoint);
-      pointList.push(linePoint);
-      let newDist = startPoint.distTo(linePoint);
-      if (startPoint.distTo(linePoint) > pathDist) {
-        break;
-      }
-      if (newDist < lastDist) {
-        scale *= 1.25;
-        i = 0;
-        break;
-      }
-      prevValue = currentPoint;
-      lastDist = newDist;
-    }
-    if (i <= 0) {
-      initialT = 0;
-      continue;
-    }
-    // rotate points
-    let rotateAngle = startPoint.getAngle(pointList[pointList.length-1]) - startPoint.getAngle(endPoint);
-    for (let p = 0; p<pointList.length; p++) {
-      pointList[p] = pointList[p].rotate(startPoint, -rotateAngle);
-    }
-    // // for each point if point is still "inside"
-    let isPointInCurve = true;
-    for (let p=0; p<pointList.length/10; p++) {
-      pointIndex = p*10
-      if (pointIndex === pointList.length) {
-        break;
-      }
+function getPointInsideCurve(curve, point) {
+  let isPointInCurve = true, minDist = curve[0].distTo(point);
+  let isLeftHanded = (((curve[0].getAngle(curve[curve.length-1]) - curve[0].getAngle(curve[1])) + 2*Math.PI) % (2*Math.PI) < Math.PI);
 
-      let lineAngle = pointList[pointIndex].getAngle(pointList[pointIndex+1]);
-      let midPointAngle = pointList[pointIndex].getAngle(midPoint);
-      let angleDiff = (midPointAngle - lineAngle + 2*Math.PI) % (2*Math.PI);
+  for (let p=0; p<curve.length/10; p++) {
+    let angleDiff, lineAngle, midPointAngle;
 
-      // if (Math.abs(midPointAngle) < 0.1) {
-      //   console.log(pointList[pointIndex], pointList[pointIndex+1]);
-      //   console.log(lineAngle, midPointAngle)
-      //   console.log(angleDiff);
-      // }
-      if ((isLeftHanded && angleDiff > Math.PI) || (!isLeftHanded && angleDiff < Math.PI)) {
-        // console.log("OUTSIDE");
-        isPointInCurve = false;
-        break;
-      }
+    pointIndex = p*10
+    if (pointIndex === curve.length-1) {
+      break;
     }
-    if (isPointInCurve) {
-      initialT = t = initialT - (0.5**i);
-    } else {
-      initialT = t = initialT + (0.5**i);
+
+    minDist = Math.min(curve[pointIndex].distTo(point), minDist);
+    lineAngle = curve[pointIndex].getAngle(curve[pointIndex+1]);
+    midPointAngle = curve[pointIndex].getAngle(point);
+    angleDiff = (midPointAngle - lineAngle + 2*Math.PI) % (2*Math.PI);
+
+    if ((isLeftHanded && angleDiff > Math.PI) || (!isLeftHanded && angleDiff < Math.PI)) {
+      isPointInCurve = false;
+      break;
     }
-    if (initialT < 0) {
-      initialT = 0;
-      scale *= 1.25;
-      i = 0;
-      continue;
-    }
-    t = 0;
   }
-  // console.log('draw', pointList.length);
-  // console.log(scale);
-  context.beginPath();
-  pointList.forEach(point => context.lineTo(...point.canvas()));
-  context.stroke();
+  return {isPointInCurve, minDist}
 }
 
 function pixelsToGridVector(values) {
