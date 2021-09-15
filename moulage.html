@@ -169,10 +169,12 @@ backPoints["I'"].labelDir = "SE";
 // 30 C to J - Along CI'
 backPoints.J = getPointAlongLine(backPoints.C, backPoints["I'"], shoulder/2);
 backPoints.J.labelDir = "SW";
+drawLine(backPoints.C, backPoints.J);
 
 // 31 J to J'
 backPoints["J'"] = getPointAlongLine(backPoints.J, backPoints["I'"], shoulderDartWidth);
 backPoints["J'"].labelDir = "SE";
+drawLine(backPoints["J'"], backPoints.I);
 
 // 32 J' to I
 backPoints.I = getPointAlongLine(backPoints["J'"], backPoints["I'"], shoulder/2);
@@ -281,12 +283,11 @@ drawLine(
 // TODO: Make arrows for grainline
 
 // 55 mitre the dart
-// TODO: mitre the dart
-let [dartLegFoldToSideNew, dartMidPointNew, dartLegFoldAwaySideNew] = mitreDart(backPoints.S, backPoints.C, backPoints.J, backPoints["J'"], backPoints.I, backPoints);
-drawLine(backPoints.C, dartLegFoldToSideNew);
-drawLine(dartLegFoldToSideNew, dartMidPointNew);
-drawLine(dartMidPointNew, dartLegFoldAwaySideNew);
-drawLine(dartLegFoldAwaySideNew, backPoints.I);
+let mitredMidPoint = mitreDart(backPoints.S, backPoints.C, backPoints.J, backPoints["J'"]);
+backPoints["J''"] = mitredMidPoint;
+backPoints["J''"].labelDir = "N";
+drawLine(backPoints.J, mitredMidPoint);
+drawLine(mitredMidPoint, backPoints["J'"]);
 
 
 
