@@ -319,7 +319,7 @@ function drawFrontDraft(backPoints, frontPoints) {
 
   // 14 B to B'
   let neckGuideLength = 5/8;
-  frontPoints["B'"] = getPointAlongLine(frontPoints.B, frontPoints.B.addv(new Point([1,-1])), neckGuideLength);
+  frontPoints["B'"] = frontPoints.B.toAngleDistance(Math.PI/4, neckGuideLength);
   drawLine(frontPoints.B, frontPoints["B'"], GUIDE_LINE);
 
   // 15 C to A
@@ -365,7 +365,9 @@ function drawFrontDraft(backPoints, frontPoints) {
   drawLine(frontPoints.K, guidePoint, GUIDE_LINE);
 
   // 25 A to L
-  // TODO: Get point on line a distance fron another point
+  let figureLength = 8 + 1/2;
+  frontPoints.L = getPointAlongLineDistanceFromPoint([frontPoints.K, guidePoint], frontPoints.A, figureLength);
+  drawLine(frontPoints.A, frontPoints.L, GUIDE_LINE);
 }
 
 

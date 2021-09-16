@@ -714,11 +714,8 @@ class Point {
   }
 
   distToLine(line) {
-    let perpendicularLineAngle = line[0].getAngle(line[1]);
-    let perpendicularPoint = this.toAngleDistance(
-      perpendicularLineAngle + Math.PI/2, 1);
-    let intersection = getIntersection(this, perpendicularPoint, line[0], line[1]);
-    return this.distTo(intersection);
+    let pointOnLine = getPointOneLineClosestToPoint(line, this);
+    return this.distTo(pointOnLine);
   }
 
   div(value) {
@@ -788,6 +785,44 @@ function getPointAlongLine(point1, point2, distance) {
   let n = v.norm()
   let u = v.div(n);
   return point1.addv(u.mult(distance))
+}
+
+function getPointOneLineClosestToPoint(line, point) {
+  /*
+  If you have a line and a point that does not lie on the line, this function
+  will get the point that lies along the line that is closest to the point.
+  That would be the intersection point of the line and a normal line that
+  passes through the point.
+  */
+
+  let perpendicularLineAngle = line[0].getAngle(line[1]);
+  let perpendicularPoint = point.toAngleDistance(
+    perpendicularLineAngle + Math.PI/2, 1);
+  return getIntersection(point, perpendicularPoint, line[0], line[1]);
+}
+
+function getPointAlongLineDistanceFromPoint(line, point, distance) {
+  /*
+  From point you want to draw a line of a specified distance where the
+  terminating point lies along the line.
+
+  Since there are two solutions, this will chose the one closer to the first
+  point in the line.
+  */
+
+  normalPoint = getPointOneLineClosestToPoint(line, point);
+  distanceFromPointToNormal = point.distTo(normalPoint);
+  distanceFromNormalAlongLine = Math.sqrt(distance**2 - distanceFromPointToNormal**2);
+  if (isNaN(distanceFromNormalAlongLine)) {
+    console.error("getPointAlongLineDistanceFromPoint: distance not close enough to line provides", line, point, distance, distanceFromPointToNormal);
+    return null;
+  }
+  solution1 = getPointAlongLine(normalPoint, line[0], distanceFromNormalAlongLine);
+  solution2 = getPointAlongLine(normalPoint, line[0], - distanceFromNormalAlongLine);
+  if (line[0].distTo(solution1) < line[0].distTo(solution2)) {
+    return solution1;
+  }
+  return solution2;
 }
 
 function getIntersection(line1Point1, line1Point2, line2Point1, line2Point2) {
