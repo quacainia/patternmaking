@@ -291,8 +291,10 @@ function drawBackDraft(backPoints, frontPoints) {
   drawLine(mitredMidPoint, backPoints["J'"]);
 }
 
-function drawFrontDraft(backPoints, frontPoints) {
-  let isMasculine = true;
+function drawFrontDraft(backPoints, frontPoints, isMasculine) {
+
+  // Beginning
+  drawLine(frontPoints.W, frontPoints.J);
 
   // 9 J to A
   let frontLength = 14 + 1/2;
@@ -335,6 +337,7 @@ function drawFrontDraft(backPoints, frontPoints) {
   // 18 F to F'
   let shoulderDartWidth = (isMasculine) ? 0 : 1/2;
   frontPoints["F'"] = getPointAlongLine(frontPoints.F, frontPoints.E, shoulderDartWidth);
+  frontPoints["F'"].labelDir = "W";
   if (isMasculine) {
     // TODO: do not draw points with this tag
     frontPoints["F'"].doNotDraw = true;
@@ -361,13 +364,138 @@ function drawFrontDraft(backPoints, frontPoints) {
   frontPoints.O = frontPoints.J.squareRight(- (waistFront + waistDartWidth));
 
   // 24 K up
-  let guidePoint = frontPoints.K.squareUp(frontPoints.J.distTo(frontPoints.G));
-  drawLine(frontPoints.K, guidePoint, GUIDE_LINE);
+  let bustWidthCrossBackGuidPoint = frontPoints.K.squareUp(frontPoints.J.distTo(frontPoints.G));
+  drawLine(frontPoints.K, bustWidthCrossBackGuidPoint, GUIDE_LINE);
 
   // 25 A to L
   let figureLength = 8 + 1/2;
-  frontPoints.L = getPointAlongLineDistanceFromPoint([frontPoints.K, guidePoint], frontPoints.A, figureLength);
+  frontPoints.L = getPointAlongLineDistanceFromPoint([frontPoints.K, bustWidthCrossBackGuidPoint], frontPoints.A, figureLength);
   drawLine(frontPoints.A, frontPoints.L, GUIDE_LINE);
+
+  // 26 L to R'
+  frontPoints["R'"] = getPointOnLineClosestToPoint([frontPoints.A, frontPoints.W], frontPoints.L);
+  drawLine(frontPoints.L, frontPoints["R'"], GUIDE_LINE);
+
+  // 27 L to K'
+  drawEulerParallelStart(frontPoints["K'"], frontPoints.L, frontPoints["K'"].squareUp(1));
+
+  // 28 L to K';
+  drawEulerParallelStart(frontPoints["K''"], frontPoints.L, frontPoints["K''"].squareUp(1));
+
+  // 29 F to L
+  if (!isMasculine) {
+    drawLine(frontPoints.F, frontPoints.L, GUIDE_LINE);
+  }
+
+  // 30 F' to L
+  if (!isMasculine) {
+    drawLine(frontPoints["F'"], frontPoints.L, GUIDE_LINE);
+  }
+
+  // 31 K to N
+  let waistDartLength = 3 + 1/2;
+  frontPoints.N = frontPoints.K.squareUp(- waistDartLength);
+  drawLine(frontPoints.K, frontPoints.N, GUIDE_LINE);
+
+  // 32 K' to N
+  drawLine(frontPoints["K'"], frontPoints.N);
+
+  // 33 K'' to N
+  drawLine(frontPoints["K''"], frontPoints.N);
+
+  // 34 Y to P
+  let halfHip = 8 + 3/4;
+  let halfHipDartGap = 0;
+  if (frontPoints.N.y > frontPoints.Y.y) {
+    pointPPrime = getIntersection(frontPoints["K'"], frontPoints.N, backPoints.G, frontPoints.Y);
+    pointPDoublePrime = getIntersection(frontPoints["K''"], frontPoints.N, backPoints.G, frontPoints.Y);
+    halfHipDartGap = pointPPrime.distTo(pointPDoublePrime)
+  }
+  frontPoints.P = frontPoints.Y.squareRight(- (halfHip + halfHipDartGap));
+
+  // 35 W to Q
+  let backHip = 9 + 3/4;
+  frontPoints.Q = frontPoints.W.squareRight(- backHip);
+
+  // 36 O to Q
+  // TODO: curves
+
+  // 37 Add line above side level
+  // 38 R' to L to S
+  let bustWidthSLinePoint, sideLevelGuidePoint;
+  let sideLevelGuideOffset = 1 + 1/8;
+  let sideLevelPointDistance = 10;
+  let bustPointToSideLevelPointDistance = sideLevelPointDistance - frontPoints.L.distTo(frontPoints["R'"]);
+
+  if (!isMasculine) {
+    sideLevelPoint = getIntersection(frontPoints.L, bustWidthCrossBackGuidPoint, frontPoints.R, backPoints.E);
+    bustWidthSLinePoint = sideLevelPoint.squareUp(sideLevelGuideOffset);
+    sideLevelGuidePoint = bustWidthSLinePoint.squareRight(- bustPointToSideLevelPointDistance)
+    drawLine(bustWidthSLinePoint, sideLevelGuidePoint, GUIDE_LINE);
+  } else {
+    bustWidthSLinePoint = getIntersection(frontPoints.L, bustWidthCrossBackGuidPoint, frontPoints.R, backPoints.E);
+    sideLevelGuidePoint = bustWidthSLinePoint.squareRight(-1);
+  }
+
+  frontPoints.S = getPointAlongLineDistanceFromPoint([sideLevelGuidePoint, bustWidthSLinePoint], frontPoints.L, bustPointToSideLevelPointDistance);
+  drawLine(frontPoints.L, frontPoints.S, GUIDE_LINE);
+
+  // 39 S to O
+  if (!isMasculine) {
+    drawLine(frontPoints.S, frontPoints.O, GUIDE_LINE);
+  }
+
+  // 40 R' to S'
+  if (!isMasculine) {
+    frontPoints["S'"] = getIntersection(frontPoints.S, frontPoints.O, frontPoints["R'"], frontPoints["R'"].squareRight(1));
+    drawLine(frontPoints.L, frontPoints["S'"], GUIDE_LINE);
+  }
+
+  // 41 S' to S''
+  if (!isMasculine) {
+    let sDoublePrimeDist = 1 + 1/8;
+    frontPoints["S''"] = getPointAlongLine(frontPoints["S'"], frontPoints.O, sDoublePrimeDist);
+  }
+
+  // 42 S'' to L
+  if (!isMasculine) {
+    drawLine(frontPoints["S''"], frontPoints.L, GUIDE_LINE);
+  }
+
+  // 43 G to I
+  let crossBackGuideLength = 6 + 7/8;
+  if (isMasculine) {
+    frontPoints.I = frontPoints.G.squareRight(- crossBackGuideLength);
+  } else {
+    let cbGuidePoint = frontPoints.G.squareRight(- crossBackGuideLength);
+    let cbDartIntF = getIntersection(cbGuidePoint, frontPoints.G, frontPoints.F, frontPoints.L);
+    let cbDartIntFPrime = getIntersection(cbGuidePoint, frontPoints.G, frontPoints["F'"], frontPoints.L);
+    let dartDist = cbDartIntF.distTo(cbDartIntFPrime);
+    frontPoints.I = frontPoints.G.squareRight(- (crossBackGuideLength +  dartDist));
+  }
+
+  // 44 I to U
+  frontPoints.U = getIntersection(frontPoints.I, frontPoints.I.squareUp(1), frontPoints.S, bustWidthSLinePoint);
+  drawLine(frontPoints.I, frontPoints.U, GUIDE_LINE);
+
+  // 45 L to U
+  if (frontPoints.L.y > frontPoints.S.y) {
+    drawLine(frontPoints.L, frontPoints.U, GUIDE_LINE);
+  }
+
+  // 46 E' to I to S
+  // TODO: This should be a guide line!
+  drawEulerMidpoint(frontPoints["E'"], frontPoints.I, frontPoints.S);
+  console.error("E' to I to S should be a guide line!");
+
+  // 47 U to T
+  if (frontPoints.L.y > frontPoints.S.y) {
+    // TODO: intersect line with a curve
+    //       Intersect LU with E'IS to get T
+  }
+
+  // 48 T to T'
+  // TODO: Get point a distance along a curve
 }
 
 
@@ -377,9 +505,9 @@ function drawFrontDraft(backPoints, frontPoints) {
 
 
 
-
+let isMasculine = true;
 drawBackDraft(backPoints, frontPoints);
-drawFrontDraft(backPoints, frontPoints);
+drawFrontDraft(backPoints, frontPoints, isMasculine);
 
 Object.keys(backPoints).forEach((key, index) => {
   drawPoint(backPoints[key]);

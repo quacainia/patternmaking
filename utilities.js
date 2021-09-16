@@ -362,7 +362,7 @@ function drawEulerParallelStart(startPoint, endPoint, parallelStartPoint) {
       t0 = t0 + (0.5**i);
     }
     if (t0 < 0) {
-      scale += 1.25;
+      scale *= 1.25;
       t0 = 0;
       i = 0;
       iter++;
@@ -714,7 +714,7 @@ class Point {
   }
 
   distToLine(line) {
-    let pointOnLine = getPointOneLineClosestToPoint(line, this);
+    let pointOnLine = getPointOnLineClosestToPoint(line, this);
     return this.distTo(pointOnLine);
   }
 
@@ -787,7 +787,7 @@ function getPointAlongLine(point1, point2, distance) {
   return point1.addv(u.mult(distance))
 }
 
-function getPointOneLineClosestToPoint(line, point) {
+function getPointOnLineClosestToPoint(line, point) {
   /*
   If you have a line and a point that does not lie on the line, this function
   will get the point that lies along the line that is closest to the point.
@@ -810,7 +810,7 @@ function getPointAlongLineDistanceFromPoint(line, point, distance) {
   point in the line.
   */
 
-  normalPoint = getPointOneLineClosestToPoint(line, point);
+  normalPoint = getPointOnLineClosestToPoint(line, point);
   distanceFromPointToNormal = point.distTo(normalPoint);
   distanceFromNormalAlongLine = Math.sqrt(distance**2 - distanceFromPointToNormal**2);
   if (isNaN(distanceFromNormalAlongLine)) {
