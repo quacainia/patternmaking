@@ -375,7 +375,7 @@ async function drawBackDraft(backPoints, frontPoints) {
   // 53 Fixing the curve to be the right length
   let armhole = 8 + 7/8;
   drawEulerOfMeasurementWithInsidePoint(
-    backPoints.I,
+    backPoints["I'"],
     backPoints["K'"],
     backPoints["L'"],
     armhole
@@ -448,7 +448,8 @@ async function drawFrontDraft(backPoints, frontPoints, isMasculine) {
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 15 C to A
-  // TODO: Neckline
+  necklineInnerGuidePoint = getPointAlongLine(frontPoints["B'"], frontPoints.B, -0.75);
+  drawEulerParallelEnd(frontPoints.C, frontPoints.A, frontPoints.B, {outsidePoint: frontPoints["B'"], insidePoint: necklineInnerGuidePoint});
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);

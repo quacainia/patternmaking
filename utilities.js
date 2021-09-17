@@ -375,6 +375,102 @@ function drawEulerParallelStart(startPoint, endPoint, parallelStartPoint) {
   context.stroke();
 }
 
+function drawEulerParallelEnd(startPoint, endPoint, parallelEndPoint, options) {
+  let dist, endAngle, isLeftHanded, iter=0, curvePoints, parallelAngle, scale, t0 = 0;
+  let {insidePoint, outsidePoint} = Object.assign(
+    {},
+    {
+      insidePoint: null,
+      outsidePoint: null,
+    },
+    options
+  )
+
+  scale = chooseEulerSize(startPoint.distTo(endPoint));
+  parallelAngle = endPoint.getAngle(parallelEndPoint);
+  endAngle = startPoint.getAngle(endPoint);
+  isLeftHanded = chooseEulerLeftHanded(startPoint, endPoint, {midPoint: parallelEndPoint});
+  dist = startPoint.distTo(endPoint);
+  context.lineWidth = 3;
+  context.strokeStyle = "#000";
+
+  for (let i = 1; i<=8; i++) {
+    let angleDiff, lastPoint;
+
+    if (iter > 10) {
+      throw "runaway loop";
+    }
+
+    eulerOptions = {
+      isLeftHanded,
+      length: dist,
+      scale,
+      startPoint,
+      t0,
+    }
+
+    let {eulerPointsList} = getEuler(eulerOptions);
+    curvePoints = eulerPointsList;
+    lastPoint = curvePoints[curvePoints.length-1];
+
+    if (!curvePoints) {
+      scale *= 1.25;
+      t0 = 0;
+      i = 0;
+      iter++;
+      continue;
+    }
+
+    //rotate
+    let endOfCurveAngle = lastPoint.getAngle(curvePoints[curvePoints.length - 2]);
+    let rotateAngle = endOfCurveAngle - parallelAngle;
+    curvePoints = curvePoints.map(point => point.rotate(startPoint, - rotateAngle));
+    lastPoint = curvePoints[curvePoints.length - 1];
+
+    if (lastPoint.distTo(endPoint) < 1/32) {
+      if (insidePoint) {
+        let {isPointInCurve} = getPointInsideCurve(curvePoints, insidePoint);
+        if (!isPointInCurve) {
+          scale *= 1.25;
+          t0 = 0;
+          i = 0;
+          iter++;
+          continue;
+        }
+      }
+      if (outsidePoint) {
+        let {isPointInCurve} = getPointInsideCurve(curvePoints, outsidePoint);
+        if (isPointInCurve) {
+          scale /= 1.25;
+          t0 = 0;
+          i = 0;
+          iter++;
+          continue;
+        }
+      }
+      break;
+    }
+
+    angleDiff = endAngle - startPoint.getAngle(lastPoint);
+    if (!((isLeftHanded && angleDiff < 0) || (!isLeftHanded && angleDiff > 0))) {
+      t0 = t0 - (0.5**i);
+    } else {
+      t0 = t0 + (0.5**i);
+    }
+    if (t0 < 0) {
+      scale *= 1.25;
+      t0 = 0;
+      i = 0;
+      iter++;
+      continue;
+    }
+  }
+
+  context.beginPath();
+  curvePoints.forEach(point => context.lineTo(...point.canvas()));
+  context.stroke();
+}
+
 function drawEulerMidpoint(startPoint, midPoint, endPoint) {
   let dist, endAngle, isLeftHanded, iter = 0, pointList, scale, t0 = 0;
 
