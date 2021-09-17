@@ -73,13 +73,13 @@ drawLine(backPoints.D, backPoints.A);
 // 9 A to B - Back Neckline
 let necklineBase = 3;
 backPoints.B = backPoints.A.squareRight(necklineBase);
-drawLine(backPoints.B, backPoints.A);
+drawLine(backPoints.B, backPoints.A, GUIDE_LINE);
 
 // 9 A to B - Back Neckline guide across
 let necklineHeight = 1;
 backPoints.C = backPoints.B.squareUp(necklineHeight);
 // 10 B to C - Back Neckline guide up
-drawLine(backPoints.B, backPoints.C);
+drawLine(backPoints.B, backPoints.C, GUIDE_LINE);
 // 11 A to C - Neckline curve
 // drawEulerSpiral(
 //   backPoints.A,
@@ -99,12 +99,12 @@ backPoints.W = backPoints.D.squareRight(crossback);
 
 // 13 W to K
 backPoints.K = backPoints.W.addv(backPoints.E.subv(backPoints.D));
-drawLine(backPoints.W, backPoints.K);
+drawLine(backPoints.W, backPoints.K, GUIDE_LINE);
 
 // 14 W to H - Up from W
 let backNeck = 3 + 1/2;
 backPoints.H = backPoints.W.squareUp(backNeck);
-drawLine(backPoints.W, backPoints.H);
+drawLine(backPoints.W, backPoints.H, GUIDE_LINE);
 
 // 15 H to H'
 backPoints["H'"] = backPoints.H.squareRight(1/2);
@@ -169,10 +169,12 @@ backPoints["I'"].labelDir = "SE";
 // 30 C to J - Along CI'
 backPoints.J = getPointAlongLine(backPoints.C, backPoints["I'"], shoulder/2);
 backPoints.J.labelDir = "SW";
+drawLine(backPoints.C, backPoints.J);
 
 // 31 J to J'
 backPoints["J'"] = getPointAlongLine(backPoints.J, backPoints["I'"], shoulderDartWidth);
 backPoints["J'"].labelDir = "SE";
+drawLine(backPoints["J'"], backPoints.I);
 
 // 32 J' to I
 backPoints.I = getPointAlongLine(backPoints["J'"], backPoints["I'"], shoulder/2);
@@ -182,11 +184,12 @@ backPoints.I.labelDir = "NE";
 drawLine(backPoints.C, backPoints.I, GUIDE_LINE);
 
 // 33 J to N
-drawLine(backPoints.J, backPoints.N);
+drawLine(backPoints.J, backPoints.N, GUIDE_LINE);
 
 // 34 J to S
 let shoulderDartLength = 3 + 1/2;
 backPoints.S = getPointAlongLine(backPoints.J, backPoints.N, shoulderDartLength);
+drawLine(backPoints.J, backPoints.S);
 
 // 35 T - Inersection of Bust Line and JN
 backPoints.T = getIntersection(backPoints.J, backPoints.N, backPoints.E, backPoints.K);
@@ -194,6 +197,7 @@ backPoints.T = getIntersection(backPoints.J, backPoints.N, backPoints.E, backPoi
 // 36 T to T' - 1" toward N
 let waistDartBustOffset = 1
 backPoints["T'"] = getPointAlongLine(backPoints.T, backPoints.N, waistDartBustOffset);
+drawLine(backPoints["T'"], backPoints.N);
 
 // 37 J' to S - A slight curver, or straight
 drawLine(backPoints.S, backPoints["J'"])
@@ -262,6 +266,7 @@ drawEulerMidpoint(
 backPoints["K'"] = getPointAlongLine(backPoints.K, backPoints.K.squareRight(1).squareUp(1), 1);
 
 // 52 I to K' to L'
+// 53 Fixing the curve to be the right length
 let armhole = 8 + 7/8;
 drawEulerOfMeasurementWithInsidePoint(
   backPoints.I,
@@ -269,9 +274,6 @@ drawEulerOfMeasurementWithInsidePoint(
   backPoints["L'"],
   armhole
 );
-
-// 53 Fixing the curve
-// TODO: fixing the curve
 
 // 54 Grainline
 drawLine(
@@ -281,12 +283,11 @@ drawLine(
 // TODO: Make arrows for grainline
 
 // 55 mitre the dart
-// TODO: mitre the dart
-let [dartLegFoldToSideNew, dartMidPointNew, dartLegFoldAwaySideNew] = mitreDart(backPoints.S, backPoints.C, backPoints.J, backPoints["J'"], backPoints.I, backPoints);
-drawLine(backPoints.C, dartLegFoldToSideNew);
-drawLine(dartLegFoldToSideNew, dartMidPointNew);
-drawLine(dartMidPointNew, dartLegFoldAwaySideNew);
-drawLine(dartLegFoldAwaySideNew, backPoints.I);
+let mitredMidPoint = mitreDart(backPoints.S, backPoints.C, backPoints.J, backPoints["J'"]);
+backPoints["J''"] = mitredMidPoint;
+backPoints["J''"].labelDir = "N";
+drawLine(backPoints.J, mitredMidPoint);
+drawLine(mitredMidPoint, backPoints["J'"]);
 
 
 

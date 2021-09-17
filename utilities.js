@@ -813,30 +813,19 @@ function getIntersection(line1Point1, line1Point2, line2Point1, line2Point2) {
   return new Point([Px, Py]);
 }
 
-function mitreDart(dartPoint, foldToPoint, dartLegFoldToSide, dartLegFoldAwaySide, foldAwayPoint, backPoints) {
-  // let [] = sidePoints;
+function mitreDart(dartPoint, foldToPoint, dartLegFoldToSide, dartLegFoldAwaySide) {
 
-  let dartAngle, dartLegFoldAwaySideNew, dartLegFoldToSideNew, dartMidPoint,
-      dartMidPointNew, foldToPointRotated;
+  let dartAngle, dartMidPoint, foldToPointRotated, mitredMidPoint;
 
   dartAngle = dartPoint.getAngle(dartLegFoldToSide) - dartPoint.getAngle(dartLegFoldAwaySide);
 
-  backPoints["C'"] = foldToPointRotated = foldToPoint.rotate(dartPoint, - dartAngle);
-  
-  backPoints["J'*"] = dartLegFoldAwaySideNew = getIntersection(foldToPointRotated, foldAwayPoint, dartPoint, dartLegFoldAwaySide);
-  backPoints["J'*"].labelDir = 'NE';
+  foldToPointRotated = foldToPoint.rotate(dartPoint, - dartAngle);
 
-  backPoints["J*"] = dartLegFoldToSideNew = dartLegFoldAwaySideNew.rotate(dartPoint, dartAngle);
-  backPoints["J*"].labelDir = 'NW';
+  dartMidPoint = getPointAlongLine(dartLegFoldToSide, dartLegFoldAwaySide, dartLegFoldToSide.distTo(dartLegFoldAwaySide)/2);
 
-  backPoints["J."] = dartMidPoint = getPointAlongLine(dartLegFoldToSide, dartLegFoldAwaySide, dartLegFoldToSide.distTo(dartLegFoldAwaySide) / 2);
-  backPoints["J."].labelDir = 'S';
+  mitredMidPoint = getIntersection(dartPoint, dartMidPoint, dartLegFoldAwaySide, foldToPointRotated);
 
-  backPoints["J.*"] = dartMidPointNew = getIntersection(dartLegFoldAwaySideNew, foldAwayPoint, dartPoint, dartMidPoint);
-
-  backPoints["J.*"].labelDir = 'N';
-
-  return [dartLegFoldToSideNew, dartMidPointNew, dartLegFoldAwaySideNew];
+  return mitredMidPoint;
 }
 
 
