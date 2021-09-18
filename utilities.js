@@ -512,11 +512,10 @@ function drawEulerPerpendicularWithPointInside(endPoint, insidePoint, startLine,
     }
 
     // move points
-    pointList = curvePoints.map(point => point.addv(endPoint).subv(lastPoint));
+    let newCurve = curve.move(endPoint.subv(lastPoint))
+    pointList = newCurve.points;
 
-    // console.error('foo');
-    // return;
-    // // for each point if point is still "inside"
+    // for each point if point is still "inside"
     isPointInCurve = true;
     minDist = dist;
     for (let p=0; p<pointList.length/10; p++) {
@@ -816,6 +815,25 @@ class EulerCurve {
     this.tMax = values.tMax;
   }
 
+  move(vector) {
+    let newMutations = [...this.mutations];
+    newMutations.push({
+      type: "move",
+      vector,
+    });
+
+    let newPoints = this.points.map(point => point.addv(vector));
+
+    return new EulerCurve(Object.assign(
+      {},
+      this,
+      {
+        points: newPoints,
+        mutations: newMutations,
+      }
+    ));
+  }
+
   rotate(angle, options) {
     let {origin} = Object.assign(
       {},
@@ -825,9 +843,9 @@ class EulerCurve {
       options
     );
 
-    let newMutations = [...this.mutations]
+    let newMutations = [...this.mutations];
     newMutations.push({
-      type: 'rotate',
+      type: "rotate",
       origin,
       angle,
     });
