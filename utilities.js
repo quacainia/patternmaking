@@ -404,14 +404,14 @@ function drawEulerParallelEnd(startPoint, endPoint, parallelEndPoint, options) {
 
     eulerOptions = {
       isLeftHanded,
-      length: dist,
+      endDistance: dist,
       scale,
       startPoint,
       t0,
     }
 
-    let {eulerPointsList} = getEuler(eulerOptions);
-    curvePoints = eulerPointsList;
+    let curve = getEuler(eulerOptions);
+    curvePoints = curve.points;
     lastPoint = curvePoints[curvePoints.length-1];
 
     if (!curvePoints) {
