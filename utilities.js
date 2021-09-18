@@ -419,8 +419,9 @@ function drawEulerMidpoint(startPoint, midPoint, endPoint) {
     }
 
     // rotate points
-    let rotateAngle = startPoint.getAngle(eulerPointsList[eulerPointsList.length-1]) - endAngle;
-    pointList = eulerPointsList.map(point => point.rotate(startPoint, -rotateAngle));
+    let rotateAngle = endAngle - startPoint.getAngle(eulerPointsList[eulerPointsList.length-1]);
+    let newCurve = curve.rotate(rotateAngle);
+    pointList = newCurve.points;
 
     // // for each point if point is still "inside"
     let isPointInCurve = true;
@@ -596,9 +597,10 @@ function drawEulerOfMeasurementWithInsidePoint(startPoint, insidePoint, endPoint
 
         let innerCurve = getEuler(options);
 
-        // // rotate points
-        let rotateAngle = startPoint.getAngle(innerCurve.points[innerCurve.points.length-1]) - endAngle;
-        pointList = innerCurve.points.map(point => point.rotate(startPoint, -rotateAngle));
+        // rotate points
+        let rotateAngle = endAngle - startPoint.getAngle(innerCurve.points[innerCurve.points.length-1]);
+        let newInnerCurve = innerCurve.rotate(rotateAngle);
+        pointList = newInnerCurve.points;
 
         curveLength = curve.curveLength;
         if (Math.abs(curveLength - measurement) < 1/16) {
@@ -612,9 +614,10 @@ function drawEulerOfMeasurementWithInsidePoint(startPoint, insidePoint, endPoint
       }
       tReverse = curve.tMax * .75;
     } else {
-      // // rotate points
-      let rotateAngle = startPoint.getAngle(eulerPointsList[eulerPointsList.length-1]) - endAngle;
-      pointList = eulerPointsList.map(point => point.rotate(startPoint, -rotateAngle));
+      // rotate points
+      let rotateAngle = endAngle - startPoint.getAngle(eulerPointsList[eulerPointsList.length-1]);
+      let newCurve = curve.rotate(rotateAngle);
+      pointList = newCurve.points;
     }
 
     let {isPointInCurve} = getPointInsideCurve(pointList, insidePoint)
@@ -799,11 +802,46 @@ class EulerCurve {
     this.error = values.error;
     this.isLeftHanded = options.isLeftHanded || false;
     this.midPoint = values.midPoint;
-    this.rotationAngle = options.rotationAngle;
+    this.mutations = values.mutations || [];
+
+    if (values.rotationAngle !== undefined) {
+      this.rotationAngle = values.rotationAngle;
+    } else {
+      this.rotationAngle = options.rotationAngle;
+    }
+
     this.scale = options.scale;
     this.startPoint = this.points[0];
     this.t0 = options.t0;
     this.tMax = values.tMax;
+  }
+
+  rotate(angle, options) {
+    let {origin} = Object.assign(
+      {},
+      {
+        origin: this.points[0],
+      },
+      options
+    );
+
+    let newMutations = [...this.mutations]
+    newMutations.push({
+      type: 'rotate',
+      origin,
+      angle,
+    });
+
+    let newPoints = this.points.map(point => point.rotate(origin, angle));
+    return new EulerCurve(Object.assign(
+      {},
+      this,
+      {
+        points: newPoints,
+        rotationAngle: (this.rotationAngle || 0) + angle,
+        mutations: newMutations,
+      }
+    ));
   }
 }
 
