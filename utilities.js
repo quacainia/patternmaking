@@ -534,20 +534,21 @@ function getEulerMidpoint(startPoint, midPoint, endPoint, options) {
   return curve;
 }
 
-function getEulerPerpendicularWithPointInside(endPoint, insidePoint, startLine, initialAngle, options) {
+function getEulerPerpendicularWithPointInside(endPoint, insidePoints, startLine, options) {
   let {isLeftHanded, maxInsidePointDist} = Object.assign(
     {},
     {
-      maxInsidePointDist: 0.25,
+      maxInsidePointDist: 0.5,
     },
     options
   );
   let curve, dist, pointList, scale, t0 = 0;
+  let initialAngle = endPoint.angleToLine(startLine);
 
   dist = endPoint.distToLine(startLine);
-  scale = chooseEulerSize(dist*2);
+  scale = chooseEulerSize(dist);
   if (isLeftHanded === undefined) {
-    isLeftHanded = chooseEulerLeftHanded(insidePoint, endPoint, {initialAngle});
+    isLeftHanded = chooseEulerLeftHanded(insidePoints[0], endPoint, {initialAngle});
   }
   context.lineWidth = 3;
   context.strokeStyle = "#000";
@@ -555,8 +556,7 @@ function getEulerPerpendicularWithPointInside(endPoint, insidePoint, startLine, 
   iter = 0;
 
   for (let i = 1; i<=8; i++) {
-    let angleDiff, diffPoint, eulerPointList, initialAngleEuler, isPointInCurve,
-        lastPoint, minDist;
+    let angleDiff, diffPoint, eulerPointList, initialAngleEuler, lastPoint;
 
     if (iter > 10) {
       console.error("drawEulerParallelWithPointInside: Too many iterations.");
@@ -591,28 +591,15 @@ function getEulerPerpendicularWithPointInside(endPoint, insidePoint, startLine, 
     pointList = curve.points;
 
     // for each point if point is still "inside"
-    isPointInCurve = true;
-    minDist = dist;
-    for (let p=0; p<curve.points.length/10; p++) {
-      let angleDiff, lineAngle, midPointAngle;
-
-      pointIndex = p*10
-      if (pointIndex === curve.points.length-1) {
-        break;
-      }
-
-      minDist = Math.min(curve.points[pointIndex].distTo(insidePoint), minDist);
-      lineAngle = curve.points[pointIndex].getAngle(curve.points[pointIndex+1]);
-      midPointAngle = curve.points[pointIndex].getAngle(insidePoint);
-      angleDiff = (midPointAngle - lineAngle + 2*Math.PI) % (2*Math.PI);
-
-      if ((isLeftHanded && angleDiff > Math.PI) || (!isLeftHanded && angleDiff < Math.PI)) {
-        isPointInCurve = false;
-        break;
-      }
+    pointsAreInsideCurve = true;
+    minInsidePointsDist = dist*2;
+    for (let iInsidePoints = 0; iInsidePoints < insidePoints.length; iInsidePoints++) {
+      let {isPointInCurve, minDist} = getPointInsideCurve(curve.points, insidePoints[iInsidePoints]);
+      pointsAreInsideCurve &= isPointInCurve;
+      minInsidePointsDist = Math.min(minDist, minInsidePointsDist);
     }
-    if (isPointInCurve) {
-      if (minDist < maxInsidePointDist) {
+    if (pointsAreInsideCurve) {
+      if (minInsidePointsDist < maxInsidePointDist) {
         break;
       } else {
         t0 = t0 - (0.5**i);
@@ -621,7 +608,11 @@ function getEulerPerpendicularWithPointInside(endPoint, insidePoint, startLine, 
       t0 = t0 + (0.5**i);
     }
     if (t0 < 0) {
-      break;
+      scale *= 1.25;
+      t0 = 0;
+      i = 0;
+      iter += 1;
+      continue;
     }
   }
   return curve;
@@ -705,6 +696,34 @@ function getEulerOfMeasurementWithInsidePoint(startPoint, insidePoint, endPoint,
   return curve;
 }
 
+function getFlippedEulerPerpendicularWithPointInside(
+    curve, endPoint, insidePoints, startLine, options) {
+  let newCurve, originalCurve;
+
+  let flippedCurve = curve.flip(0)
+  let movedCurve = flippedCurve.move(endPoint.subv(flippedCurve.points[flippedCurve.points.length - 1]));
+
+  let pointsAreInsideCurve = true;
+  for (let i=0; i < insidePoints.length; i++) {
+    let {isPointInCurve} = getPointInsideCurve(movedCurve.points, insidePoints[i]);
+    if (!isPointInCurve) {
+      pointsAreInsideCurve = false;
+      break;
+    }
+  }
+
+  if (!pointsAreInsideCurve) {
+    newCurve = getEulerPerpendicularWithPointInside(endPoint, insidePoints, startLine, options);
+
+    let unflippedCurve = newCurve.flip(0);
+    originalCurve = unflippedCurve.move(curve.points[curve.points.length-1].subv(unflippedCurve.points[unflippedCurve.points.length - 1]));
+  } else {
+    newCurve = movedCurve;
+    originalCurve = curve;
+  }
+  return {flipped: newCurve, original: originalCurve};
+}
+
 function getPointInsideCurve(curve, point) {
   let isPointInCurve = true, minDist = curve[0].distTo(point);
   let isLeftHanded = (((curve[0].getAngle(curve[curve.length-1]) - curve[0].getAngle(curve[1])) + 2*Math.PI) % (2*Math.PI) < Math.PI);
@@ -770,6 +789,10 @@ class Point {
 
   addvCanvas(values) {
     return this.addv(pixelsToGridVector(values));
+  }
+
+  angleToLine(line) {
+    return getPointOnLineClosestToPoint(line, this).getAngle(this);
   }
 
   canvasX() {
@@ -877,6 +900,47 @@ class Curve {
     this.startPoint = this.points[0];
     this.t0 = this.options.t0;
     this.tMax = values.tMax;
+  }
+
+  flip(index) {
+    let angle;
+
+    let newMutations = [...this.mutations];
+    newMutations.push({
+      type: "flip",
+      index,
+    })
+
+    if (index == 0) {
+      angle = this.points[index].getAngle(this.points[index+1]);
+    } else if (index === this.points.length-1) {
+      angle = this.points[index-1].getAngle(this.points[index]);
+    } else {
+      angle = this.points[index-1].getAngle(this.points[index+1]);
+    }
+
+    let p1 = this.points[index];
+    let p2 = p1.toAngleDistance(angle, 1);
+
+    let dx = p2.x - p1.x;
+    let dy = p2.y - p1.y;
+
+    let a = (dx**2 - dy**2) / (dx**2 + dy**2);
+    let b = 2 * dx * dy / (dx**2 + dy**2);
+
+    let newPoints = this.points.map(p => new Point([
+      a * (p.x - p1.x) + b*(p.y - p1.y) + p1.x,
+      b * (p.x - p1.x) - a*(p.y - p1.y) + p1.y
+    ]));
+
+    return new Curve(Object.assign(
+      {},
+      this,
+      {
+        points: newPoints,
+        mutations: newMutations,
+      }
+    ));
   }
 
   move(vector) {
