@@ -32,6 +32,9 @@ let frontBodice = {
   labelColor: "#900",
   labelDefaultDir: "E",
 }
+let bodiceGuide = {
+  curves: {},
+}
 
 grid(GRID_SIZE, 1, GRID_OFFSET);
 grid(GRID_SIZE/2, 1/2, GRID_OFFSET);
@@ -43,8 +46,8 @@ let backTop = new Point([1,1]);
 let backBottom = new Point([1,29]);
 let frontTop = new Point([29,1]);
 let frontBottom = new Point([29,29]);
-drawLine(frontTop, frontBottom, GUIDE_LINE);
-drawLine(backTop, backBottom, GUIDE_LINE);
+bodiceGuide.curves.centerFront = getLine(frontTop, frontBottom, GUIDE_LINE);
+bodiceGuide.curves.centerBack = getLine(backTop, backBottom, GUIDE_LINE);
 
 function sleep(s) {
   return new Promise(resolve => setTimeout(resolve, s*1000));
@@ -54,7 +57,7 @@ async function drawBackDraft(backBodice, frontBodice) {
   // 3 R Across - Hip Line
   backBodice.points.R = getPointAlongLine(backBottom, backTop, 1);
   frontBodice.points.W = getPointAlongLine(frontBottom, frontTop, 1);
-  drawLine(backBodice.points.R, frontBodice.points.W)
+  bodiceGuide.curves.RW = getLine(backBodice.points.R, frontBodice.points.W, GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
@@ -62,7 +65,7 @@ async function drawBackDraft(backBodice, frontBodice) {
   let waistLevel = 8 + 1/4;
   backBodice.points.F = getPointAlongLine(backBodice.points.R, backTop, waistLevel);
   frontBodice.points.J = getPointAlongLine(frontBodice.points.W, frontTop, waistLevel);
-  drawLine(backBodice.points.F, frontBodice.points.J);
+  bodiceGuide.curves.FJ = getLine(backBodice.points.F, frontBodice.points.J, GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
@@ -70,7 +73,7 @@ async function drawBackDraft(backBodice, frontBodice) {
   let halfHipLevel = 3 + 3/4;
   backBodice.points.G = getPointAlongLine(backBodice.points.F, backBodice.points.R, halfHipLevel);
   frontBodice.points.Y = getPointAlongLine(frontBodice.points.J, frontBodice.points.W, halfHipLevel);
-  drawLine(backBodice.points.G, frontBodice.points.Y);
+  bodiceGuide.curves.GY = getLine(backBodice.points.G, frontBodice.points.Y, GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
@@ -84,7 +87,7 @@ async function drawBackDraft(backBodice, frontBodice) {
   let bustLevel = 8;
   backBodice.points.E = getPointAlongLine(backBodice.points.F, backTop, bustLevel);
   frontBodice.points.R = getPointAlongLine(frontBodice.points.J, frontTop, bustLevel);
-  drawLine(backBodice.points.E, frontBodice.points.R);
+  bodiceGuide.curves.ER = getLine(backBodice.points.E, frontBodice.points.R, GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
@@ -92,15 +95,15 @@ async function drawBackDraft(backBodice, frontBodice) {
   let crossbackLevel = 4 + 1/8
   backBodice.points.D = getPointAlongLine(backBodice.points.E, backTop, crossbackLevel);
   frontBodice.points.G = getPointAlongLine(frontBodice.points.R, frontTop, crossbackLevel);
-  drawLine(backBodice.points.D, frontBodice.points.G);
-  drawLine(backBodice.points.D, backBodice.points.A);
+  bodiceGuide.curves.DG = getLine(backBodice.points.D, frontBodice.points.G, GUIDE_LINE);
+  backBodice.curves.DA = getLine(backBodice.points.D, backBodice.points.A);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 9 A to B - Back Neckline
   let necklineBase = 3;
   backBodice.points.B = backBodice.points.A.squareRight(necklineBase);
-  drawLine(backBodice.points.B, backBodice.points.A, GUIDE_LINE);
+  backBodice.curves.BA = getLine(backBodice.points.B, backBodice.points.A, GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
@@ -111,7 +114,7 @@ async function drawBackDraft(backBodice, frontBodice) {
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 10 B to C - Back Neckline guide up
-  drawLine(backBodice.points.B, backBodice.points.C, GUIDE_LINE);
+  backBodice.curves.BC = getLine(backBodice.points.B, backBodice.points.C, GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
@@ -128,14 +131,14 @@ async function drawBackDraft(backBodice, frontBodice) {
   // await sleep(DEFAULT_SLEEP_TIME);
   // 13 W to K
   backBodice.points.K = backBodice.points.W.addv(backBodice.points.E.subv(backBodice.points.D));
-  drawLine(backBodice.points.W, backBodice.points.K, GUIDE_LINE);
+  backBodice.curves.WK = getLine(backBodice.points.W, backBodice.points.K, GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 14 W to H - Up from W
   let backNeck = 3 + 1/2;
   backBodice.points.H = backBodice.points.W.squareUp(backNeck);
-  drawLine(backBodice.points.W, backBodice.points.H, GUIDE_LINE);
+  backBodice.curves.WH = getLine(backBodice.points.W, backBodice.points.H, GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
@@ -174,19 +177,19 @@ async function drawBackDraft(backBodice, frontBodice) {
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 21 D to F'
-  drawLine(backBodice.points.D, backBodice.points["F'"]);
+  backBodice.curves["DF'"] = getLine(backBodice.points.D, backBodice.points["F'"]);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 22 F to R'
   let FRPrimeLength = -6;
   backBodice.points["R'"] = backBodice.points.F.squareUp(FRPrimeLength);
-  drawLine(backBodice.points["R'"], backBodice.points.R);
+  backBodice.curves["RR'"] = getLine(backBodice.points["R'"], backBodice.points.R);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 23 F' to R'
-  drawLine(backBodice.points["F'"], backBodice.points["R'"]);
+  backBodice.curves["F'R'"] = getLine(backBodice.points["F'"], backBodice.points["R'"]);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
@@ -212,6 +215,8 @@ async function drawBackDraft(backBodice, frontBodice) {
   // 27 N' to O - Waistline
   backBodice.points.O = backBodice.points["N'"].squareRight(waist/2);
   backBodice.points.O.labelDir = "E";
+  backBodice.curves["F'N"] = getLine(backBodice.points["F'"], backBodice.points.N);
+  backBodice.curves["N'O"] = getLine(backBodice.points["N'"], backBodice.points.O);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
@@ -228,14 +233,14 @@ async function drawBackDraft(backBodice, frontBodice) {
   // 30 C to J - Along CI'
   backBodice.points.J = getPointAlongLine(backBodice.points.C, backBodice.points["I'"], shoulder/2);
   backBodice.points.J.labelDir = "SW";
-  drawLine(backBodice.points.C, backBodice.points.J);
+  backBodice.curves.CJ = getLine(backBodice.points.C, backBodice.points.J);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 31 J to J'
   backBodice.points["J'"] = getPointAlongLine(backBodice.points.J, backBodice.points["I'"], shoulderDartWidth);
   backBodice.points["J'"].labelDir = "SE";
-  drawLine(backBodice.points["J'"], backBodice.points.I);
+  backBodice.curves["J'I"] = getLine(backBodice.points["J'"], backBodice.points.I);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
@@ -246,19 +251,19 @@ async function drawBackDraft(backBodice, frontBodice) {
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 29 C to I - but better
-  drawLine(backBodice.points.C, backBodice.points.I, GUIDE_LINE);
+  backBodice.curves.CI = getLine(backBodice.points.C, backBodice.points.I, GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 33 J to N
-  drawLine(backBodice.points.J, backBodice.points.N, GUIDE_LINE);
+  backBodice.curves.JN = getLine(backBodice.points.J, backBodice.points.N, GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 34 J to S
   let shoulderDartLength = 3 + 1/2;
   backBodice.points.S = getPointAlongLine(backBodice.points.J, backBodice.points.N, shoulderDartLength);
-  drawLine(backBodice.points.J, backBodice.points.S);
+  backBodice.curves.JS = getLine(backBodice.points.J, backBodice.points.S);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
@@ -270,17 +275,17 @@ async function drawBackDraft(backBodice, frontBodice) {
   // 36 T to T' - 1" toward N
   let waistDartBustOffset = 1
   backBodice.points["T'"] = getPointAlongLine(backBodice.points.T, backBodice.points.N, waistDartBustOffset);
-  drawLine(backBodice.points["T'"], backBodice.points.N);
+  backBodice.curves["T'N"] = getLine(backBodice.points["T'"], backBodice.points.N);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 37 J' to S - A slight curver, or straight
-  drawLine(backBodice.points.S, backBodice.points["J'"])
+  backBodice.curves["SJ'"] = getLine(backBodice.points.S, backBodice.points["J'"])
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 38 N' to T'
-  drawLine(backBodice.points["N'"], backBodice.points["T'"])
+  backBodice.curves["N'T'"] = getLine(backBodice.points["N'"], backBodice.points["T'"])
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
@@ -291,12 +296,12 @@ async function drawBackDraft(backBodice, frontBodice) {
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 40 N to V
-  drawLine(backBodice.points.N, backBodice.points.V);
+  backBodice.curves.NV = getLine(backBodice.points.N, backBodice.points.V);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 41 N' to V
-  drawLine(backBodice.points["N'"], backBodice.points.V);
+  backBodice.curves["N'V"] = getLine(backBodice.points["N'"], backBodice.points.V);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
@@ -321,6 +326,10 @@ async function drawBackDraft(backBodice, frontBodice) {
   backBodice.curves.OQ = getEulerPerpendicularWithPointInside(
     backBodice.points.O, backBodice.points.P, [backBodice.points.R, backBodice.points.Q], initialAngleQO, {isLeftHanded: true}
   );
+  backBodice.points["Q'"] = backBodice.curves.OQ.points[0];
+  backBodice.points["Q'"].labelDir = "E";
+  backBodice.curves["RQ'"] = getLine(backBodice.points.R, backBodice.points["Q'"]);
+  // TODO: G' to V', V'' to P
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
@@ -336,11 +345,12 @@ async function drawBackDraft(backBodice, frontBodice) {
   let bustEase = 1/4;
   backBodice.points["L'"] = backBodice.points.L.squareRight(bustEase);
   backBodice.points["L'"].labelDir = "NE";
+  backBodice.curves["E'L'"] = getLine(backBodice.points["E'"], backBodice.points["L'"])
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 47 O to L
-  drawLine(backBodice.points.O, backBodice.points.L, GUIDE_LINE);
+  backBodice.curves.OL = getLine(backBodice.points.O, backBodice.points.L, GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
@@ -379,11 +389,12 @@ async function drawBackDraft(backBodice, frontBodice) {
     backBodice.points["L'"],
     armhole
   );
+  // TODO D to W'
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 54 Grainline
-  drawLine(
+  backBodice.curves.GRAIN = getLine(
     backBodice.points.E.squareRight(2).squareUp(1),
     backBodice.points.G.squareRight(2).squareUp(-1)
   );
@@ -395,35 +406,35 @@ async function drawBackDraft(backBodice, frontBodice) {
   let mitredMidPoint = mitreDart(backBodice.points.S, backBodice.points.C, backBodice.points.J, backBodice.points["J'"]);
   backBodice.points["J''"] = mitredMidPoint;
   backBodice.points["J''"].labelDir = "N";
-  drawLine(backBodice.points.J, mitredMidPoint);
-  drawLine(mitredMidPoint, backBodice.points["J'"]);
+  backBodice.curves["JJ''"] = getLine(backBodice.points.J, mitredMidPoint);
+  backBodice.curves["J'J''"] = getLine(mitredMidPoint, backBodice.points["J'"]);
 }
 
 async function drawFrontDraft(backBodice, frontBodice, isMasculine) {
 
   // Beginning
-  drawLine(frontBodice.points.W, frontBodice.points.J);
+  frontBodice.curves.WJ = getLine(frontBodice.points.W, frontBodice.points.J);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 9 J to A
   let frontLength = 14 + 1/2;
   frontBodice.points.A = frontBodice.points.J.squareUp(frontLength);
-  drawLine(frontBodice.points.J, frontBodice.points.A);
+  frontBodice.curves.JA = getLine(frontBodice.points.J, frontBodice.points.A);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 10 A to B
   let frontNeck = 2 + 3/4;
   frontBodice.points.B = frontBodice.points.A.squareRight(-frontNeck);
-  drawLine(frontBodice.points.A, frontBodice.points.B, GUIDE_LINE);
+  frontBodice.curves.AB = getLine(frontBodice.points.A, frontBodice.points.B, GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 11 B to C
   let frontNeckVert = frontNeck + 1/4;
   frontBodice.points.C = frontBodice.points.B.squareUp(frontNeck);
-  drawLine(frontBodice.points.B, frontBodice.points.C, GUIDE_LINE);
+  frontBodice.curves.BC = getLine(frontBodice.points.B, frontBodice.points.C, GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
@@ -435,14 +446,14 @@ async function drawFrontDraft(backBodice, frontBodice, isMasculine) {
   // 13 D to E
   let frontShoulderGuide = (isMasculine) ? 7 : 6;
   frontBodice.points.E = frontBodice.points.D.squareRight(- frontShoulderGuide);
-  drawLine(frontBodice.points.D, frontBodice.points.E, GUIDE_LINE);
+  frontBodice.curves.DE = getLine(frontBodice.points.D, frontBodice.points.E, GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 14 B to B'
   let neckGuideLength = 5/8;
   frontBodice.points["B'"] = frontBodice.points.B.toAngleDistance(Math.PI/4, neckGuideLength);
-  drawLine(frontBodice.points.B, frontBodice.points["B'"], GUIDE_LINE);
+  frontBodice.curves["BB'"] = getLine(frontBodice.points.B, frontBodice.points["B'"], GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
@@ -453,7 +464,7 @@ async function drawFrontDraft(backBodice, frontBodice, isMasculine) {
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 16 C to E
-  drawLine(frontBodice.points.C, frontBodice.points.E, GUIDE_LINE);
+  frontBodice.curves.CE = getLine(frontBodice.points.C, frontBodice.points.E, GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
@@ -506,20 +517,20 @@ async function drawFrontDraft(backBodice, frontBodice, isMasculine) {
   // await sleep(DEFAULT_SLEEP_TIME);
   // 24 K up
   let bustWidthCrossBackGuidPoint = frontBodice.points.K.squareUp(frontBodice.points.J.distTo(frontBodice.points.G));
-  drawLine(frontBodice.points.K, bustWidthCrossBackGuidPoint, GUIDE_LINE);
+  frontBodice.curves.BustVline = getLine(frontBodice.points.K, bustWidthCrossBackGuidPoint, GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 25 A to L
   let figureLength = 8 + 1/2;
   frontBodice.points.L = getPointAlongLineDistanceFromPoint([frontBodice.points.K, bustWidthCrossBackGuidPoint], frontBodice.points.A, figureLength);
-  drawLine(frontBodice.points.A, frontBodice.points.L, GUIDE_LINE);
+  frontBodice.curves.AL = getLine(frontBodice.points.A, frontBodice.points.L, GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 26 L to R'
   frontBodice.points["R'"] = getPointOnLineClosestToPoint([frontBodice.points.A, frontBodice.points.W], frontBodice.points.L);
-  drawLine(frontBodice.points.L, frontBodice.points["R'"], GUIDE_LINE);
+  frontBodice.curves["LR'"] = getLine(frontBodice.points.L, frontBodice.points["R'"], GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
@@ -535,14 +546,14 @@ async function drawFrontDraft(backBodice, frontBodice, isMasculine) {
   // await sleep(DEFAULT_SLEEP_TIME);
   // 29 F to L
   if (!isMasculine) {
-    drawLine(frontBodice.points.F, frontBodice.points.L, GUIDE_LINE);
+    frontBodice.curves.FL = getLine(frontBodice.points.F, frontBodice.points.L, GUIDE_LINE);
   }
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 30 F' to L
   if (!isMasculine) {
-    drawLine(frontBodice.points["F'"], frontBodice.points.L, GUIDE_LINE);
+    frontBodice.curves["F'L"] = getLine(frontBodice.points["F'"], frontBodice.points.L, GUIDE_LINE);
   }
   // drawPoints();
 
@@ -550,17 +561,17 @@ async function drawFrontDraft(backBodice, frontBodice, isMasculine) {
   // 31 K to N
   let waistDartLength = 3 + 1/2;
   frontBodice.points.N = frontBodice.points.K.squareUp(- waistDartLength);
-  drawLine(frontBodice.points.K, frontBodice.points.N, GUIDE_LINE);
+  frontBodice.curves.KN = getLine(frontBodice.points.K, frontBodice.points.N, GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 32 K' to N
-  drawLine(frontBodice.points["K'"], frontBodice.points.N);
+  frontBodice.curves["K'N"] = getLine(frontBodice.points["K'"], frontBodice.points.N);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 33 K'' to N
-  drawLine(frontBodice.points["K''"], frontBodice.points.N);
+  frontBodice.curves["K''N"] = getLine(frontBodice.points["K''"], frontBodice.points.N);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
@@ -598,20 +609,20 @@ async function drawFrontDraft(backBodice, frontBodice, isMasculine) {
     sideLevelPoint = getIntersection(frontBodice.points.L, bustWidthCrossBackGuidPoint, frontBodice.points.R, backBodice.points.E);
     bustWidthSLinePoint = sideLevelPoint.squareUp(sideLevelGuideOffset);
     sideLevelGuidePoint = bustWidthSLinePoint.squareRight(- bustPointToSideLevelPointDistance)
-    drawLine(bustWidthSLinePoint, sideLevelGuidePoint, GUIDE_LINE);
+    frontBodice.curves.sideLevelGuide = getLine(bustWidthSLinePoint, sideLevelGuidePoint, GUIDE_LINE);
   } else {
     bustWidthSLinePoint = getIntersection(frontBodice.points.L, bustWidthCrossBackGuidPoint, frontBodice.points.R, backBodice.points.E);
     sideLevelGuidePoint = bustWidthSLinePoint.squareRight(-1);
   }
 
   frontBodice.points.S = getPointAlongLineDistanceFromPoint([sideLevelGuidePoint, bustWidthSLinePoint], frontBodice.points.L, bustPointToSideLevelPointDistance);
-  drawLine(frontBodice.points.L, frontBodice.points.S, GUIDE_LINE);
+  frontBodice.curves.LS = getLine(frontBodice.points.L, frontBodice.points.S, GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 39 S to O
   if (!isMasculine) {
-    drawLine(frontBodice.points.S, frontBodice.points.O, GUIDE_LINE);
+    frontBodice.curves.SO = getLine(frontBodice.points.S, frontBodice.points.O, GUIDE_LINE);
   }
   // drawPoints();
 
@@ -619,7 +630,7 @@ async function drawFrontDraft(backBodice, frontBodice, isMasculine) {
   // 40 R' to S'
   if (!isMasculine) {
     frontBodice.points["S'"] = getIntersection(frontBodice.points.S, frontBodice.points.O, frontBodice.points["R'"], frontBodice.points["R'"].squareRight(1));
-    drawLine(frontBodice.points.L, frontBodice.points["S'"], GUIDE_LINE);
+    frontBodice.curves["LS'"] = getLine(frontBodice.points.L, frontBodice.points["S'"], GUIDE_LINE);
   }
   // drawPoints();
 
@@ -634,7 +645,7 @@ async function drawFrontDraft(backBodice, frontBodice, isMasculine) {
   // await sleep(DEFAULT_SLEEP_TIME);
   // 42 S'' to L
   if (!isMasculine) {
-    drawLine(frontBodice.points["S''"], frontBodice.points.L, GUIDE_LINE);
+    frontBodice.curves["S''L"] = getLine(frontBodice.points["S''"], frontBodice.points.L, GUIDE_LINE);
   }
   // drawPoints();
 
@@ -655,13 +666,13 @@ async function drawFrontDraft(backBodice, frontBodice, isMasculine) {
   // await sleep(DEFAULT_SLEEP_TIME);
   // 44 I to U
   frontBodice.points.U = getIntersection(frontBodice.points.I, frontBodice.points.I.squareUp(1), frontBodice.points.S, bustWidthSLinePoint);
-  drawLine(frontBodice.points.I, frontBodice.points.U, GUIDE_LINE);
+  frontBodice.curves.IU = getLine(frontBodice.points.I, frontBodice.points.U, GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 45 L to U
   if (frontBodice.points.L.y > frontBodice.points.S.y) {
-    drawLine(frontBodice.points.L, frontBodice.points.U, GUIDE_LINE);
+    frontBodice.curves.LU = getLine(frontBodice.points.L, frontBodice.points.U, GUIDE_LINE);
   }
   // drawPoints();
 
@@ -690,14 +701,15 @@ async function drawFrontDraft(backBodice, frontBodice, isMasculine) {
 
 
 
-let isMasculine = true;
+let isMasculine = false;
 async function main() {
   let start = performance.now();
   await drawBackDraft(backBodice, frontBodice);
   await drawFrontDraft(backBodice, frontBodice, isMasculine);
 
-  drawCurves(backBodice.curves);
-  drawCurves(frontBodice.curves);
+  drawCurves(bodiceGuide);
+  drawCurves(backBodice);
+  drawCurves(frontBodice);
   drawPoints(backBodice);
   drawPoints(frontBodice);
   let end = performance.now();
@@ -705,9 +717,9 @@ async function main() {
   console.log('start', start, 'end', end, 'runtime', end-start);
 }
 
-function drawCurves(curves) {
-  Object.keys(curves).forEach((key, index) => {
-    let curve = curves[key]
+function drawCurves(pattern) {
+  Object.keys(pattern.curves).forEach((key, index) => {
+    let curve = pattern.curves[key]
     if (curve) {
       let curveStyle = curve.curveStyle || {};
       context.beginPath();

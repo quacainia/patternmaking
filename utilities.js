@@ -31,23 +31,8 @@ function grid(size, width, zero) {
   }
 }
 
-function drawLine(start, end, options) {
-  let {color = "#000", lineWidth = 3} = (options ? options : {});
-
-  if (Array.isArray(start)) {
-    start = new Point(start);
-  }
-  if (Array.isArray(end)) {
-    end = new Point(end);
-  }
-
-  context.beginPath();
-  context.moveTo(...start.canvas());
-  context.lineTo(...end.canvas());
-  context.lineWidth = lineWidth;
-  context.strokeStyle = color;
-  context.lineCap = 'round';
-  context.stroke();
+function getLine(start, end, options) {
+  return new Curve({points: [start, end], curveStyle: options});
 }
 
 function drawPoint(point) {
@@ -258,25 +243,25 @@ function getEuler(options) {
       }
       let pointAngle = startAngle - startPoint.getAngle(plotPoint);
       if (currentDist * Math.cos(pointAngle) >= endDistanceParallel) {
-        return new EulerCurve({points: eulerPointsList, curveLength, tMax: t, options});
+        return new Curve({points: eulerPointsList, curveLength, tMax: t, options});
       }
     } else if (currentDist >= endDistance) {
-      return new EulerCurve({points: eulerPointsList, curveLength, tMax: t, options});
+      return new Curve({points: eulerPointsList, curveLength, tMax: t, options});
     } else if (currentDist < prevDist) {
       // TODO: Include this in the renaming of distance / length
-      return new EulerCurve({error: 'maxLengthError', points: eulerPointsList, endDistance: currentDist, tMax: t, curveLength, options});
+      return new Curve({error: 'maxLengthError', points: eulerPointsList, endDistance: currentDist, tMax: t, curveLength, options});
     }
     prevDist = currentDist;
   }
   if (isNaN(eulerPointsList[eulerPointsList.length-1].x) || isNaN(eulerPointsList[eulerPointsList.length-1].y)) {
     // console.error("NaN values in Euler Spiral");
-    return new EulerCurve({error: 'containsNaNValues', options});
+    return new Curve({error: 'containsNaNValues', options});
   }
   if (endDistance && maxPoints === 1000) {
     // console.log('end');
-    return new EulerCurve({error: 'ranOutOfPoints', options});
+    return new Curve({error: 'ranOutOfPoints', options});
   }
-  return new EulerCurve({points: eulerPointsList, curveLength, tMax: t, options});
+  return new Curve({points: eulerPointsList, curveLength, tMax: t, options});
 }
 
 function chooseEulerLeftHanded(startPoint, endPoint, options) {
@@ -866,7 +851,7 @@ class Point {
   }
 }
 
-class EulerCurve {
+class Curve {
   // A long list of points to display as a curve
 
   constructor(values) {
@@ -875,22 +860,22 @@ class EulerCurve {
 
     this.curveLength = values.curveLength || null;
     this.curveStyle = this.options.curveStyle || values.curveStyle;
-    this.endDistance = options.endDistance || null;
+    this.endDistance = this.options.endDistance || null;
     this.endPoint = this.points[this.points.length - 1];
     this.error = values.error;
-    this.isLeftHanded = options.isLeftHanded || false;
+    this.isLeftHanded = this.options.isLeftHanded || false;
     this.midPoint = values.midPoint;
     this.mutations = values.mutations || [];
 
     if (values.rotationAngle !== undefined) {
       this.rotationAngle = values.rotationAngle;
     } else {
-      this.rotationAngle = options.rotationAngle;
+      this.rotationAngle = this.options.rotationAngle;
     }
 
-    this.scale = options.scale;
+    this.scale = this.options.scale;
     this.startPoint = this.points[0];
-    this.t0 = options.t0;
+    this.t0 = this.options.t0;
     this.tMax = values.tMax;
   }
 
@@ -903,7 +888,7 @@ class EulerCurve {
 
     let newPoints = this.points.map(point => point.addv(vector));
 
-    return new EulerCurve(Object.assign(
+    return new Curve(Object.assign(
       {},
       this,
       {
@@ -930,7 +915,7 @@ class EulerCurve {
     });
 
     let newPoints = this.points.map(point => point.rotate(origin, angle));
-    return new EulerCurve(Object.assign(
+    return new Curve(Object.assign(
       {},
       this,
       {
