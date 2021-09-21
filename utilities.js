@@ -150,6 +150,8 @@ function chooseEulerSize(dist) {
 function getEuler(options) {
   /*
   Options:
+  - curveStyle
+    - Styling to give to the curve object
   - endDistance
     - Straight line distance that the curve should stop at
   - endDistanceParallel
@@ -309,8 +311,8 @@ function getEulerInitialAngle(options) {
   return eulerPointsList[0].getAngle(eulerPointsList[1]);
 }
 
-function drawEulerParallelStart(startPoint, endPoint, parallelStartPoint) {
-  let dist, endAngle, isLeftHanded, iter, curvePoints, rotationAngle, scale, t0 = 0;
+function getEulerParallelStart(startPoint, endPoint, parallelStartPoint) {
+  let dist, endAngle, isLeftHanded, iter, curve, rotationAngle, scale, t0 = 0;
 
   scale = chooseEulerSize(startPoint.distTo(endPoint));
   rotationAngle = startPoint.getAngle(parallelStartPoint);
@@ -340,11 +342,10 @@ function drawEulerParallelStart(startPoint, endPoint, parallelStartPoint) {
 
     options.rotationAngle = rotationAngle-initialAngleEuler;
 
-    let curve = getEuler(options);
-    curvePoints = curve.points;
-    lastPoint = curvePoints[curvePoints.length-1];
+    curve = getEuler(options);
+    lastPoint = curve.points[curve.points.length-1];
 
-    if (!curvePoints) {
+    if (!curve.points) {
       scale *= 1.25;
       t0 = 0;
       i = 0;
@@ -371,13 +372,11 @@ function drawEulerParallelStart(startPoint, endPoint, parallelStartPoint) {
     }
   }
 
-  context.beginPath();
-  curvePoints.forEach(point => context.lineTo(...point.canvas()));
-  context.stroke();
+  return curve;
 }
 
-function drawEulerParallelEnd(startPoint, endPoint, parallelEndPoint, options) {
-  let dist, endAngle, isLeftHanded, iter=0, curvePoints, parallelAngle, scale, t0 = 0;
+function getEulerParallelEnd(startPoint, endPoint, parallelEndPoint, options) {
+  let curve, dist, endAngle, isLeftHanded, iter=0, parallelAngle, scale, t0 = 0;
   let {insidePoint, outsidePoint} = Object.assign(
     {},
     {
@@ -410,11 +409,10 @@ function drawEulerParallelEnd(startPoint, endPoint, parallelEndPoint, options) {
       t0,
     }
 
-    let curve = getEuler(eulerOptions);
-    curvePoints = curve.points;
-    lastPoint = curvePoints[curvePoints.length-1];
+    let initialCurve = getEuler(eulerOptions);
+    lastPoint = initialCurve.points[initialCurve.points.length-1];
 
-    if (!curvePoints) {
+    if (!initialCurve.points) {
       scale *= 1.25;
       t0 = 0;
       i = 0;
@@ -423,14 +421,14 @@ function drawEulerParallelEnd(startPoint, endPoint, parallelEndPoint, options) {
     }
 
     //rotate
-    let endOfCurveAngle = lastPoint.getAngle(curvePoints[curvePoints.length - 2]);
-    let rotateAngle = endOfCurveAngle - parallelAngle;
-    curvePoints = curvePoints.map(point => point.rotate(startPoint, - rotateAngle));
-    lastPoint = curvePoints[curvePoints.length - 1];
+    let endOfCurveAngle = lastPoint.getAngle(initialCurve.points[initialCurve.points.length - 2]);
+    let rotateAngle = parallelAngle - endOfCurveAngle;
+    curve = initialCurve.rotate(rotateAngle, {origin: startPoint});
+    lastPoint = curve.points[curve.points.length - 1];
 
     if (lastPoint.distTo(endPoint) < 1/32) {
       if (insidePoint) {
-        let {isPointInCurve} = getPointInsideCurve(curvePoints, insidePoint);
+        let {isPointInCurve} = getPointInsideCurve(curve.points, insidePoint);
         if (!isPointInCurve) {
           scale *= 1.25;
           t0 = 0;
@@ -440,7 +438,7 @@ function drawEulerParallelEnd(startPoint, endPoint, parallelEndPoint, options) {
         }
       }
       if (outsidePoint) {
-        let {isPointInCurve} = getPointInsideCurve(curvePoints, outsidePoint);
+        let {isPointInCurve} = getPointInsideCurve(curve.points, outsidePoint);
         if (isPointInCurve) {
           scale /= 1.25;
           t0 = 0;
@@ -467,13 +465,12 @@ function drawEulerParallelEnd(startPoint, endPoint, parallelEndPoint, options) {
     }
   }
 
-  context.beginPath();
-  curvePoints.forEach(point => context.lineTo(...point.canvas()));
-  context.stroke();
+  return curve;
 }
 
-function drawEulerMidpoint(startPoint, midPoint, endPoint) {
-  let dist, endAngle, isLeftHanded, iter = 0, pointList, scale, t0 = 0;
+function getEulerMidpoint(startPoint, midPoint, endPoint, options) {
+  let curve, dist, endAngle, isLeftHanded, iter = 0, scale, t0 = 0;
+  let {curveStyle} = Object.assign({}, options);
 
   scale = chooseEulerSize(startPoint.distTo(endPoint));
   isLeftHanded = chooseEulerLeftHanded(startPoint, endPoint, {midPoint});
@@ -491,16 +488,16 @@ function drawEulerMidpoint(startPoint, midPoint, endPoint) {
     }
 
     options = {
+      curveStyle,
       isLeftHanded,
       endDistance: dist,
       scale,
       startPoint,
       t0,
     }
-    let curve = getEuler(options);
-    let eulerPointsList = curve.points;
+    let initialCurve = getEuler(options);
 
-    if (!eulerPointsList) {
+    if (!initialCurve.points) {
       if (i > 1) {
         t0 = t0 - (0.5**i);
       }
@@ -515,20 +512,19 @@ function drawEulerMidpoint(startPoint, midPoint, endPoint) {
     }
 
     // rotate points
-    let rotateAngle = endAngle - startPoint.getAngle(eulerPointsList[eulerPointsList.length-1]);
-    let newCurve = curve.rotate(rotateAngle);
-    pointList = newCurve.points;
+    let rotateAngle = endAngle - startPoint.getAngle(initialCurve.points[initialCurve.points.length-1]);
+    curve = initialCurve.rotate(rotateAngle);
 
     // // for each point if point is still "inside"
     let isPointInCurve = true;
-    for (let p=0; p<pointList.length/10; p++) {
+    for (let p=0; p<curve.points.length/10; p++) {
       pointIndex = p*10
-      if (pointIndex === pointList.length-1) {
+      if (pointIndex === curve.points.length-1) {
         break;
       }
 
-      let lineAngle = pointList[pointIndex].getAngle(pointList[pointIndex+1]);
-      let midPointAngle = pointList[pointIndex].getAngle(midPoint);
+      let lineAngle = curve.points[pointIndex].getAngle(curve.points[pointIndex+1]);
+      let midPointAngle = curve.points[pointIndex].getAngle(midPoint);
       let angleDiff = (midPointAngle - lineAngle + 2*Math.PI) % (2*Math.PI);
 
       if ((isLeftHanded && angleDiff > Math.PI) || (!isLeftHanded && angleDiff < Math.PI)) {
@@ -549,12 +545,11 @@ function drawEulerMidpoint(startPoint, midPoint, endPoint) {
       continue;
     }
   }
-  context.beginPath();
-  pointList.forEach(point => context.lineTo(...point.canvas()));
-  context.stroke();
+
+  return curve;
 }
 
-function drawEulerPerpendicularWithPointInside(endPoint, insidePoint, startLine, initialAngle, options) {
+function getEulerPerpendicularWithPointInside(endPoint, insidePoint, startLine, initialAngle, options) {
   let {isLeftHanded, maxInsidePointDist} = Object.assign(
     {},
     {
@@ -562,7 +557,7 @@ function drawEulerPerpendicularWithPointInside(endPoint, insidePoint, startLine,
     },
     options
   );
-  let dist, pointList, scale, t0 = 0;
+  let curve, dist, pointList, scale, t0 = 0;
 
   dist = endPoint.distToLine(startLine);
   scale = chooseEulerSize(dist*2);
@@ -595,11 +590,10 @@ function drawEulerPerpendicularWithPointInside(endPoint, insidePoint, startLine,
 
     options.rotationAngle = initialAngle-initialAngleEuler;
 
-    let curve = getEuler(options);
-    curvePoints = curve.points;
-    lastPoint = curvePoints[curvePoints.length-1];
+    let initialCurve = getEuler(options);
+    lastPoint = initialCurve.points[initialCurve.points.length-1];
 
-    if (!curvePoints) {
+    if (!initialCurve.points) {
       scale *= 1.25;
       t0 = 0;
       i = 0;
@@ -608,23 +602,23 @@ function drawEulerPerpendicularWithPointInside(endPoint, insidePoint, startLine,
     }
 
     // move points
-    let newCurve = curve.move(endPoint.subv(lastPoint))
-    pointList = newCurve.points;
+    curve = initialCurve.move(endPoint.subv(lastPoint))
+    pointList = curve.points;
 
     // for each point if point is still "inside"
     isPointInCurve = true;
     minDist = dist;
-    for (let p=0; p<pointList.length/10; p++) {
+    for (let p=0; p<curve.points.length/10; p++) {
       let angleDiff, lineAngle, midPointAngle;
 
       pointIndex = p*10
-      if (pointIndex === pointList.length-1) {
+      if (pointIndex === curve.points.length-1) {
         break;
       }
 
-      minDist = Math.min(pointList[pointIndex].distTo(insidePoint), minDist);
-      lineAngle = pointList[pointIndex].getAngle(pointList[pointIndex+1]);
-      midPointAngle = pointList[pointIndex].getAngle(insidePoint);
+      minDist = Math.min(curve.points[pointIndex].distTo(insidePoint), minDist);
+      lineAngle = curve.points[pointIndex].getAngle(curve.points[pointIndex+1]);
+      midPointAngle = curve.points[pointIndex].getAngle(insidePoint);
       angleDiff = (midPointAngle - lineAngle + 2*Math.PI) % (2*Math.PI);
 
       if ((isLeftHanded && angleDiff > Math.PI) || (!isLeftHanded && angleDiff < Math.PI)) {
@@ -645,13 +639,11 @@ function drawEulerPerpendicularWithPointInside(endPoint, insidePoint, startLine,
       break;
     }
   }
-  context.beginPath();
-  pointList.forEach(point => context.lineTo(...point.canvas()));
-  context.stroke();
+  return curve;
 }
 
-function drawEulerOfMeasurementWithInsidePoint(startPoint, insidePoint, endPoint, measurement, maxFarAngle) {
-  let dist, endAngle, isLeftHanded, iter = 0, pointList, scale, t0 = 0, 
+function getEulerOfMeasurementWithInsidePoint(startPoint, insidePoint, endPoint, measurement, maxFarAngle) {
+  let curve, dist, endAngle, isLeftHanded, iter = 0, pointList, scale, t0 = 0, 
       t0Delta = 0.1, tReverse, options;
   const ITERATIONS = 5;
   // startPoint = startPoint.addv(new Point([0, 5]));
@@ -681,44 +673,38 @@ function drawEulerOfMeasurementWithInsidePoint(startPoint, insidePoint, endPoint
       t0,
       tReverse
     }
-    let curve = getEuler(options);
-    let eulerPointsList = curve.points;
-    let curveLength = curve.curveLength;
+    let initialCurve = getEuler(options);
 
-    if (curve.error) {
+    if (initialCurve.error) {
       tReversePct = 0.5
       for (let ii = 1; ii <=10; ii++) {
-        options.tReverse = curve.tMax * tReversePct;
+        options.tReverse = initialCurve.tMax * tReversePct;
 
-        let innerCurve = getEuler(options);
+        let initialReverseCurve = getEuler(options);
 
         // rotate points
-        let rotateAngle = endAngle - startPoint.getAngle(innerCurve.points[innerCurve.points.length-1]);
-        let newInnerCurve = innerCurve.rotate(rotateAngle);
-        pointList = newInnerCurve.points;
+        let rotateAngle = endAngle - startPoint.getAngle(initialReverseCurve.points[initialReverseCurve.points.length-1]);
+        curve = initialReverseCurve.rotate(rotateAngle);
 
-        curveLength = curve.curveLength;
-        if (Math.abs(curveLength - measurement) < 1/16) {
+        if (Math.abs(curve.curveLength - measurement) < 1/16) {
           break;
         }
-        if (innerCurve.error || curveLength < measurement) {
+        if (initialReverseCurve.error || curve.curveLength < measurement) {
           tReversePct += 0.5 ** (ii+1);
         } else {
           tReversePct -= 0.5 ** (ii+1);
         }
       }
-      tReverse = curve.tMax * .75;
     } else {
       // rotate points
-      let rotateAngle = endAngle - startPoint.getAngle(eulerPointsList[eulerPointsList.length-1]);
-      let newCurve = curve.rotate(rotateAngle);
-      pointList = newCurve.points;
+      let rotateAngle = endAngle - startPoint.getAngle(initialCurve.points[initialCurve.points.length-1]);
+      curve = initialCurve.rotate(rotateAngle);
     }
 
-    let {isPointInCurve} = getPointInsideCurve(pointList, insidePoint)
-    if (isPointInCurve && Math.abs(curveLength - measurement) < 1/16) {
+    let {isPointInCurve} = getPointInsideCurve(curve.points, insidePoint)
+    if (isPointInCurve && Math.abs(curve.curveLength - measurement) < 1/16) {
       break;
-    } else if (curveLength < measurement) {
+    } else if (curve.curveLength < measurement) {
       t0 = t0 + (t0Delta);
     } else {
       t0Delta /= 2;
@@ -726,13 +712,12 @@ function drawEulerOfMeasurementWithInsidePoint(startPoint, insidePoint, endPoint
     }
     if (i === ITERATIONS) {
       console.error("Ran out of iterations");
-      pointList = null;
+      return null
       // TODO: lower EL'
     }
   }
-  context.beginPath();
-  pointList.forEach(point => context.lineTo(...point.canvas()));
-  context.stroke();
+
+  return curve;
 }
 
 function getPointInsideCurve(curve, point) {
@@ -889,6 +874,7 @@ class EulerCurve {
     this.options = values.options || {};
 
     this.curveLength = values.curveLength || null;
+    this.curveStyle = this.options.curveStyle || values.curveStyle;
     this.endDistance = options.endDistance || null;
     this.endPoint = this.points[this.points.length - 1];
     this.error = values.error;

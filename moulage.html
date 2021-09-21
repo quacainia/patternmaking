@@ -21,8 +21,17 @@ var context = canvas.getContext("2d");
 
 const DEFAULT_SLEEP_TIME = 0.2;
 const GUIDE_LINE = {color: "#555", lineWidth: 1};
-let backPoints = {};
-let frontPoints = {};
+
+let backBodice = {
+  points: {},
+  curves: {},
+}
+let frontBodice = {
+  points: {},
+  curves: {},
+  labelColor: "#900",
+  labelDefaultDir: "E",
+}
 
 grid(GRID_SIZE, 1, GRID_OFFSET);
 grid(GRID_SIZE/2, 1/2, GRID_OFFSET);
@@ -41,108 +50,98 @@ function sleep(s) {
   return new Promise(resolve => setTimeout(resolve, s*1000));
 }
 
-async function drawBackDraft(backPoints, frontPoints) {
+async function drawBackDraft(backBodice, frontBodice) {
   // 3 R Across - Hip Line
-  backPoints.R = getPointAlongLine(backBottom, backTop, 1);
-  frontPoints.W = getPointAlongLine(frontBottom, frontTop, 1);
-  drawLine(backPoints.R, frontPoints.W)
+  backBodice.points.R = getPointAlongLine(backBottom, backTop, 1);
+  frontBodice.points.W = getPointAlongLine(frontBottom, frontTop, 1);
+  drawLine(backBodice.points.R, frontBodice.points.W)
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 4 R to F + Square - Waist Measurement
   let waistLevel = 8 + 1/4;
-  backPoints.F = getPointAlongLine(backPoints.R, backTop, waistLevel);
-  frontPoints.J = getPointAlongLine(frontPoints.W, frontTop, waistLevel);
-  drawLine(backPoints.F, frontPoints.J);
+  backBodice.points.F = getPointAlongLine(backBodice.points.R, backTop, waistLevel);
+  frontBodice.points.J = getPointAlongLine(frontBodice.points.W, frontTop, waistLevel);
+  drawLine(backBodice.points.F, frontBodice.points.J);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 5 F to G + Square - Half Hip
   let halfHipLevel = 3 + 3/4;
-  backPoints.G = getPointAlongLine(backPoints.F, backPoints.R, halfHipLevel);
-  frontPoints.Y = getPointAlongLine(frontPoints.J, frontPoints.W, halfHipLevel);
-  drawLine(backPoints.G, frontPoints.Y);
+  backBodice.points.G = getPointAlongLine(backBodice.points.F, backBodice.points.R, halfHipLevel);
+  frontBodice.points.Y = getPointAlongLine(frontBodice.points.J, frontBodice.points.W, halfHipLevel);
+  drawLine(backBodice.points.G, frontBodice.points.Y);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 6 F to A - Neck Line
   let waistToNeck = 16 + 1/4;
-  backPoints.A = getPointAlongLine(backPoints.F, backTop, waistToNeck);
+  backBodice.points.A = getPointAlongLine(backBodice.points.F, backTop, waistToNeck);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 7 F to E - Bust Level
   let bustLevel = 8;
-  backPoints.E = getPointAlongLine(backPoints.F, backTop, bustLevel);
-  frontPoints.R = getPointAlongLine(frontPoints.J, frontTop, bustLevel);
-  drawLine(backPoints.E, frontPoints.R);
+  backBodice.points.E = getPointAlongLine(backBodice.points.F, backTop, bustLevel);
+  frontBodice.points.R = getPointAlongLine(frontBodice.points.J, frontTop, bustLevel);
+  drawLine(backBodice.points.E, frontBodice.points.R);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 8 E to D - Crossback Level. Halfway from E to A
   let crossbackLevel = 4 + 1/8
-  backPoints.D = getPointAlongLine(backPoints.E, backTop, crossbackLevel);
-  frontPoints.G = getPointAlongLine(frontPoints.R, frontTop, crossbackLevel);
-  drawLine(backPoints.D, frontPoints.G);
-  drawLine(backPoints.D, backPoints.A);
+  backBodice.points.D = getPointAlongLine(backBodice.points.E, backTop, crossbackLevel);
+  frontBodice.points.G = getPointAlongLine(frontBodice.points.R, frontTop, crossbackLevel);
+  drawLine(backBodice.points.D, frontBodice.points.G);
+  drawLine(backBodice.points.D, backBodice.points.A);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 9 A to B - Back Neckline
   let necklineBase = 3;
-  backPoints.B = backPoints.A.squareRight(necklineBase);
-  drawLine(backPoints.B, backPoints.A, GUIDE_LINE);
+  backBodice.points.B = backBodice.points.A.squareRight(necklineBase);
+  drawLine(backBodice.points.B, backBodice.points.A, GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 9 A to B - Back Neckline guide across
   let necklineHeight = 1;
-  backPoints.C = backPoints.B.squareUp(necklineHeight);
+  backBodice.points.C = backBodice.points.B.squareUp(necklineHeight);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 10 B to C - Back Neckline guide up
-  drawLine(backPoints.B, backPoints.C, GUIDE_LINE);
+  drawLine(backBodice.points.B, backBodice.points.C, GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 11 A to C - Neckline curve
-  // drawEulerSpiral(
-  //   backPoints.A,
-  //   {
-  //     endPoint: backPoints.C,
-  //     initialT: 0,
-  //     isLeftHanded: true,
-  //     parallelStartPoint: backPoints.B,
-  //     // scale: 3.3
-  //   }
-  // );
-  drawEulerParallelStart(backPoints.A, backPoints.C, backPoints.B);
+  backBodice.curves.AC = getEulerParallelStart(backBodice.points.A, backBodice.points.C, backBodice.points.B);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 12 D to W - Crossback
   let crossback = 8;
-  backPoints.W = backPoints.D.squareRight(crossback);
+  backBodice.points.W = backBodice.points.D.squareRight(crossback);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 13 W to K
-  backPoints.K = backPoints.W.addv(backPoints.E.subv(backPoints.D));
-  drawLine(backPoints.W, backPoints.K, GUIDE_LINE);
+  backBodice.points.K = backBodice.points.W.addv(backBodice.points.E.subv(backBodice.points.D));
+  drawLine(backBodice.points.W, backBodice.points.K, GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 14 W to H - Up from W
   let backNeck = 3 + 1/2;
-  backPoints.H = backPoints.W.squareUp(backNeck);
-  drawLine(backPoints.W, backPoints.H, GUIDE_LINE);
+  backBodice.points.H = backBodice.points.W.squareUp(backNeck);
+  drawLine(backBodice.points.W, backBodice.points.H, GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 15 H to H'
-  backPoints["H'"] = backPoints.H.squareRight(1/2);
-  backPoints["H'"].labelDir = "N";
+  backBodice.points["H'"] = backBodice.points.H.squareRight(1/2);
+  backBodice.points["H'"].labelDir = "N";
 
   // 16 C to H' - Tracing Line
   // SKIP
@@ -151,75 +150,75 @@ async function drawBackDraft(backPoints, frontPoints) {
   // await sleep(DEFAULT_SLEEP_TIME);
   // 17 C to J - Along CH'
   let shoulder = 5 + 1/2;
-  backPoints.J = getPointAlongLine(backPoints.C, backPoints["H'"], shoulder/2);
+  backBodice.points.J = getPointAlongLine(backBodice.points.C, backBodice.points["H'"], shoulder/2);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 18 J to J' - Dart Width
   let shoulderDartWidth = 1/2;
-  backPoints["J'"] = getPointAlongLine(backPoints.J, backPoints["H'"], shoulderDartWidth);
+  backBodice.points["J'"] = getPointAlongLine(backBodice.points.J, backBodice.points["H'"], shoulderDartWidth);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 19 J' to I
-  backPoints.I = getPointAlongLine(backPoints["J'"], backPoints["H'"], shoulder/2);
-  backPoints.I.labelDir = "NE";
+  backBodice.points.I = getPointAlongLine(backBodice.points["J'"], backBodice.points["H'"], shoulder/2);
+  backBodice.points.I.labelDir = "NE";
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 20 F to F' - Center Back Intake
   let centerBackIntake = 1/4;
-  backPoints["F'"] = backPoints.F.squareRight(centerBackIntake);
-  backPoints["F'"].labelDir = "E";
+  backBodice.points["F'"] = backBodice.points.F.squareRight(centerBackIntake);
+  backBodice.points["F'"].labelDir = "E";
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 21 D to F'
-  drawLine(backPoints.D, backPoints["F'"]);
+  drawLine(backBodice.points.D, backBodice.points["F'"]);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 22 F to R'
   let FRPrimeLength = -6;
-  backPoints["R'"] = backPoints.F.squareUp(FRPrimeLength);
-  drawLine(backPoints["R'"], backPoints.R);
+  backBodice.points["R'"] = backBodice.points.F.squareUp(FRPrimeLength);
+  drawLine(backBodice.points["R'"], backBodice.points.R);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 23 F' to R'
-  drawLine(backPoints["F'"], backPoints["R'"]);
+  drawLine(backBodice.points["F'"], backBodice.points["R'"]);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 24 F' to N - To Waist Dart
   let waist = 7 + 3/4;
-  backPoints.N = backPoints["F'"].squareRight(waist/2);
+  backBodice.points.N = backBodice.points["F'"].squareRight(waist/2);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 25 N to N' - Waist Dart
   let waistDart = 1;
-  backPoints["N'"] = backPoints.N.squareRight(waistDart);
-  backPoints["N'"].labelDir = "E";
+  backBodice.points["N'"] = backBodice.points.N.squareRight(waistDart);
+  backBodice.points["N'"].labelDir = "E";
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 26 N to N'' - Center of Waist Dart
-  backPoints["N''"] = backPoints.N.squareRight(waistDart/2);
-  backPoints["N''"].labelDir = "N";
+  backBodice.points["N''"] = backBodice.points.N.squareRight(waistDart/2);
+  backBodice.points["N''"].labelDir = "N";
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 27 N' to O - Waistline
-  backPoints.O = backPoints["N'"].squareRight(waist/2);
-  backPoints.O.labelDir = "E";
+  backBodice.points.O = backBodice.points["N'"].squareRight(waist/2);
+  backBodice.points.O.labelDir = "E";
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 28 O to I' - End of Shoulder
   let endOfShoulder = 15 + 1/2;
-  backPoints["I'"] = getPointAlongLine(backPoints.O, backPoints.I, endOfShoulder);
-  backPoints["I'"].labelDir = "SE";
+  backBodice.points["I'"] = getPointAlongLine(backBodice.points.O, backBodice.points.I, endOfShoulder);
+  backBodice.points["I'"].labelDir = "SE";
 
   // 29 C to I'
   // SKIP
@@ -227,157 +226,157 @@ async function drawBackDraft(backPoints, frontPoints) {
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 30 C to J - Along CI'
-  backPoints.J = getPointAlongLine(backPoints.C, backPoints["I'"], shoulder/2);
-  backPoints.J.labelDir = "SW";
-  drawLine(backPoints.C, backPoints.J);
+  backBodice.points.J = getPointAlongLine(backBodice.points.C, backBodice.points["I'"], shoulder/2);
+  backBodice.points.J.labelDir = "SW";
+  drawLine(backBodice.points.C, backBodice.points.J);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 31 J to J'
-  backPoints["J'"] = getPointAlongLine(backPoints.J, backPoints["I'"], shoulderDartWidth);
-  backPoints["J'"].labelDir = "SE";
-  drawLine(backPoints["J'"], backPoints.I);
+  backBodice.points["J'"] = getPointAlongLine(backBodice.points.J, backBodice.points["I'"], shoulderDartWidth);
+  backBodice.points["J'"].labelDir = "SE";
+  drawLine(backBodice.points["J'"], backBodice.points.I);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 32 J' to I
-  backPoints.I = getPointAlongLine(backPoints["J'"], backPoints["I'"], shoulder/2);
-  backPoints.I.labelDir = "NE";
+  backBodice.points.I = getPointAlongLine(backBodice.points["J'"], backBodice.points["I'"], shoulder/2);
+  backBodice.points.I.labelDir = "NE";
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 29 C to I - but better
-  drawLine(backPoints.C, backPoints.I, GUIDE_LINE);
+  drawLine(backBodice.points.C, backBodice.points.I, GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 33 J to N
-  drawLine(backPoints.J, backPoints.N, GUIDE_LINE);
+  drawLine(backBodice.points.J, backBodice.points.N, GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 34 J to S
   let shoulderDartLength = 3 + 1/2;
-  backPoints.S = getPointAlongLine(backPoints.J, backPoints.N, shoulderDartLength);
-  drawLine(backPoints.J, backPoints.S);
+  backBodice.points.S = getPointAlongLine(backBodice.points.J, backBodice.points.N, shoulderDartLength);
+  drawLine(backBodice.points.J, backBodice.points.S);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 35 T - Inersection of Bust Line and JN
-  backPoints.T = getIntersection(backPoints.J, backPoints.N, backPoints.E, backPoints.K);
+  backBodice.points.T = getIntersection(backBodice.points.J, backBodice.points.N, backBodice.points.E, backBodice.points.K);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 36 T to T' - 1" toward N
   let waistDartBustOffset = 1
-  backPoints["T'"] = getPointAlongLine(backPoints.T, backPoints.N, waistDartBustOffset);
-  drawLine(backPoints["T'"], backPoints.N);
+  backBodice.points["T'"] = getPointAlongLine(backBodice.points.T, backBodice.points.N, waistDartBustOffset);
+  drawLine(backBodice.points["T'"], backBodice.points.N);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 37 J' to S - A slight curver, or straight
-  drawLine(backPoints.S, backPoints["J'"])
+  drawLine(backBodice.points.S, backBodice.points["J'"])
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 38 N' to T'
-  drawLine(backPoints["N'"], backPoints["T'"])
+  drawLine(backBodice.points["N'"], backBodice.points["T'"])
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 39 N'' to V
   let waistDartBottomLength = 4 + 1/2;
-  backPoints.V = backPoints["N''"].squareUp(- waistDartBottomLength);
+  backBodice.points.V = backBodice.points["N''"].squareUp(- waistDartBottomLength);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 40 N to V
-  drawLine(backPoints.N, backPoints.V);
+  drawLine(backBodice.points.N, backBodice.points.V);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 41 N' to V
-  drawLine(backPoints["N'"], backPoints.V);
+  drawLine(backBodice.points["N'"], backBodice.points.V);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 42 G' to P
   let halfHip = 8 + 1/4;
-  backPoints["G'"] = getIntersection(backPoints.G, frontPoints.Y, backPoints["F'"], backPoints["R'"]);
-  backPoints["G'"].labelDir = "NE";
-  pointPPrime = getIntersection(backPoints.N, backPoints.V, backPoints.G, frontPoints.Y);
-  pointPDoublePrime = getIntersection(backPoints["N'"], backPoints.V, backPoints.G, frontPoints.Y);
-  backPoints.P = backPoints["G'"].squareRight(halfHip + pointPPrime.distTo(pointPDoublePrime))
+  backBodice.points["G'"] = getIntersection(backBodice.points.G, frontBodice.points.Y, backBodice.points["F'"], backBodice.points["R'"]);
+  backBodice.points["G'"].labelDir = "NE";
+  pointPPrime = getIntersection(backBodice.points.N, backBodice.points.V, backBodice.points.G, frontBodice.points.Y);
+  pointPDoublePrime = getIntersection(backBodice.points["N'"], backBodice.points.V, backBodice.points.G, frontBodice.points.Y);
+  backBodice.points.P = backBodice.points["G'"].squareRight(halfHip + pointPPrime.distTo(pointPDoublePrime))
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 43 R to Q
   let hip = 9 + 1/4;
-  backPoints.Q = backPoints.R.squareRight(hip);
+  backBodice.points.Q = backBodice.points.R.squareRight(hip);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 44 O to Q'
-  let initialAngleQO = backPoints.Q.getAngle(backPoints.Q.squareUp(1));
-  drawEulerPerpendicularWithPointInside(
-    backPoints.O, backPoints.P, [backPoints.R, backPoints.Q], initialAngleQO, {isLeftHanded: true}
+  let initialAngleQO = backBodice.points.Q.getAngle(backBodice.points.Q.squareUp(1));
+  backBodice.curves.OQ = getEulerPerpendicularWithPointInside(
+    backBodice.points.O, backBodice.points.P, [backBodice.points.R, backBodice.points.Q], initialAngleQO, {isLeftHanded: true}
   );
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 45 E' to L
   let bust = 9 + 1/2;
-  backPoints["E'"] = getIntersection(backPoints.E, backPoints.T, backPoints.D, backPoints["F'"]);
-  backPoints["E'"].labelDir = "NE";
-  backPoints.L = backPoints["E'"].squareRight(bust);
+  backBodice.points["E'"] = getIntersection(backBodice.points.E, backBodice.points.T, backBodice.points.D, backBodice.points["F'"]);
+  backBodice.points["E'"].labelDir = "NE";
+  backBodice.points.L = backBodice.points["E'"].squareRight(bust);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 46 L to L'
   let bustEase = 1/4;
-  backPoints["L'"] = backPoints.L.squareRight(bustEase);
-  backPoints["L'"].labelDir = "NE";
+  backBodice.points["L'"] = backBodice.points.L.squareRight(bustEase);
+  backBodice.points["L'"].labelDir = "NE";
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 47 O to L
-  drawLine(backPoints.O, backPoints.L, GUIDE_LINE);
+  drawLine(backBodice.points.O, backBodice.points.L, GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 48 O to M
-  backPoints.M = getPointAlongLine(backPoints.O, backPoints.L, backPoints.O.distTo(backPoints.L)/3);
-  backPoints.M.labelDir = "E"
+  backBodice.points.M = getPointAlongLine(backBodice.points.O, backBodice.points.L, backBodice.points.O.distTo(backBodice.points.L)/3);
+  backBodice.points.M.labelDir = "E"
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 49 M to M'
   let mOffset = 1/4;
-  backPoints["M'"] = backPoints.M.squareRight(- mOffset);
+  backBodice.points["M'"] = backBodice.points.M.squareRight(- mOffset);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 50 L' to M' to O
-  drawEulerMidpoint(
-    backPoints["L'"],
-    backPoints["M'"],
-    backPoints.O
+  backBodice.curves["L'O"] = getEulerMidpoint(
+    backBodice.points["L'"],
+    backBodice.points["M'"],
+    backBodice.points.O
   );
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 51 K to K' - K' is 1" way from K at 45°
-  backPoints["K'"] = getPointAlongLine(backPoints.K, backPoints.K.squareRight(1).squareUp(1), 1);
+  backBodice.points["K'"] = getPointAlongLine(backBodice.points.K, backBodice.points.K.squareRight(1).squareUp(1), 1);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 52 I to K' to L'
   // 53 Fixing the curve to be the right length
   let armhole = 8 + 7/8;
-  drawEulerOfMeasurementWithInsidePoint(
-    backPoints["I'"],
-    backPoints["K'"],
-    backPoints["L'"],
+  backBodice.curves["I'L'"] = getEulerOfMeasurementWithInsidePoint(
+    backBodice.points["I'"],
+    backBodice.points["K'"],
+    backBodice.points["L'"],
     armhole
   );
   // drawPoints();
@@ -385,201 +384,201 @@ async function drawBackDraft(backPoints, frontPoints) {
   // await sleep(DEFAULT_SLEEP_TIME);
   // 54 Grainline
   drawLine(
-    backPoints.E.squareRight(2).squareUp(1),
-    backPoints.G.squareRight(2).squareUp(-1)
+    backBodice.points.E.squareRight(2).squareUp(1),
+    backBodice.points.G.squareRight(2).squareUp(-1)
   );
   // TODO: Make arrows for grainline
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 55 mitre the dart
-  let mitredMidPoint = mitreDart(backPoints.S, backPoints.C, backPoints.J, backPoints["J'"]);
-  backPoints["J''"] = mitredMidPoint;
-  backPoints["J''"].labelDir = "N";
-  drawLine(backPoints.J, mitredMidPoint);
-  drawLine(mitredMidPoint, backPoints["J'"]);
+  let mitredMidPoint = mitreDart(backBodice.points.S, backBodice.points.C, backBodice.points.J, backBodice.points["J'"]);
+  backBodice.points["J''"] = mitredMidPoint;
+  backBodice.points["J''"].labelDir = "N";
+  drawLine(backBodice.points.J, mitredMidPoint);
+  drawLine(mitredMidPoint, backBodice.points["J'"]);
 }
 
-async function drawFrontDraft(backPoints, frontPoints, isMasculine) {
+async function drawFrontDraft(backBodice, frontBodice, isMasculine) {
 
   // Beginning
-  drawLine(frontPoints.W, frontPoints.J);
+  drawLine(frontBodice.points.W, frontBodice.points.J);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 9 J to A
   let frontLength = 14 + 1/2;
-  frontPoints.A = frontPoints.J.squareUp(frontLength);
-  drawLine(frontPoints.J, frontPoints.A);
+  frontBodice.points.A = frontBodice.points.J.squareUp(frontLength);
+  drawLine(frontBodice.points.J, frontBodice.points.A);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 10 A to B
   let frontNeck = 2 + 3/4;
-  frontPoints.B = frontPoints.A.squareRight(-frontNeck);
-  drawLine(frontPoints.A, frontPoints.B, GUIDE_LINE);
+  frontBodice.points.B = frontBodice.points.A.squareRight(-frontNeck);
+  drawLine(frontBodice.points.A, frontBodice.points.B, GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 11 B to C
   let frontNeckVert = frontNeck + 1/4;
-  frontPoints.C = frontPoints.B.squareUp(frontNeck);
-  drawLine(frontPoints.B, frontPoints.C, GUIDE_LINE);
+  frontBodice.points.C = frontBodice.points.B.squareUp(frontNeck);
+  drawLine(frontBodice.points.B, frontBodice.points.C, GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 12 B to D
-  frontPoints.D = getPointAlongLine(frontPoints.B, frontPoints.C, frontNeckVert/2);
+  frontBodice.points.D = getPointAlongLine(frontBodice.points.B, frontBodice.points.C, frontNeckVert/2);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 13 D to E
   let frontShoulderGuide = (isMasculine) ? 7 : 6;
-  frontPoints.E = frontPoints.D.squareRight(- frontShoulderGuide);
-  drawLine(frontPoints.D, frontPoints.E, GUIDE_LINE);
+  frontBodice.points.E = frontBodice.points.D.squareRight(- frontShoulderGuide);
+  drawLine(frontBodice.points.D, frontBodice.points.E, GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 14 B to B'
   let neckGuideLength = 5/8;
-  frontPoints["B'"] = frontPoints.B.toAngleDistance(Math.PI/4, neckGuideLength);
-  drawLine(frontPoints.B, frontPoints["B'"], GUIDE_LINE);
+  frontBodice.points["B'"] = frontBodice.points.B.toAngleDistance(Math.PI/4, neckGuideLength);
+  drawLine(frontBodice.points.B, frontBodice.points["B'"], GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 15 C to A
-  necklineInnerGuidePoint = getPointAlongLine(frontPoints["B'"], frontPoints.B, -0.75);
-  drawEulerParallelEnd(frontPoints.C, frontPoints.A, frontPoints.B, {outsidePoint: frontPoints["B'"], insidePoint: necklineInnerGuidePoint});
+  necklineInnerGuidePoint = getPointAlongLine(frontBodice.points["B'"], frontBodice.points.B, -0.75);
+  frontBodice.curves["CA"] = getEulerParallelEnd(frontBodice.points.C, frontBodice.points.A, frontBodice.points.B, {outsidePoint: frontBodice.points["B'"], insidePoint: necklineInnerGuidePoint});
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 16 C to E
-  drawLine(frontPoints.C, frontPoints.E, GUIDE_LINE);
+  drawLine(frontBodice.points.C, frontBodice.points.E, GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 17 C to F
   let shoulder = 5 + 1/2;
-  frontPoints.F = getPointAlongLine(frontPoints.C, frontPoints.E, shoulder/2);
+  frontBodice.points.F = getPointAlongLine(frontBodice.points.C, frontBodice.points.E, shoulder/2);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 18 F to F'
   let shoulderDartWidth = (isMasculine) ? 0 : 1/2;
-  frontPoints["F'"] = getPointAlongLine(frontPoints.F, frontPoints.E, shoulderDartWidth);
-  frontPoints["F'"].labelDir = "W";
+  frontBodice.points["F'"] = getPointAlongLine(frontBodice.points.F, frontBodice.points.E, shoulderDartWidth);
+  frontBodice.points["F'"].labelDir = "W";
   if (isMasculine) {
     // TODO: do not draw points with this tag
-    frontPoints["F'"].doNotDraw = true;
+    frontBodice.points["F'"].doNotDraw = true;
   }
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 19 F' to E'
-  frontPoints["E'"] = getPointAlongLine(frontPoints["F'"], frontPoints.E, shoulder/2);
+  frontBodice.points["E'"] = getPointAlongLine(frontBodice.points["F'"], frontBodice.points.E, shoulder/2);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 20 J to K
   let figureWidthCalc = 4 + 3/8;
-  frontPoints.K = frontPoints.J.squareRight(- figureWidthCalc);
-  frontPoints.K.labelDir = "N";
+  frontBodice.points.K = frontBodice.points.J.squareRight(- figureWidthCalc);
+  frontBodice.points.K.labelDir = "N";
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 21 K to K''
   let waistDartWidth = 1/2;
-  frontPoints["K''"] = frontPoints.K.squareRight(waistDartWidth / 2);
+  frontBodice.points["K''"] = frontBodice.points.K.squareRight(waistDartWidth / 2);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 22 K' to K''
-  frontPoints["K'"] = frontPoints.K.squareRight(- waistDartWidth / 2);
-  frontPoints["K'"].labelDir = "W";
+  frontBodice.points["K'"] = frontBodice.points.K.squareRight(- waistDartWidth / 2);
+  frontBodice.points["K'"].labelDir = "W";
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 23 J to O
   let waistFront = 8 + 3/4;
-  frontPoints.O = frontPoints.J.squareRight(- (waistFront + waistDartWidth));
+  frontBodice.points.O = frontBodice.points.J.squareRight(- (waistFront + waistDartWidth));
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 24 K up
-  let bustWidthCrossBackGuidPoint = frontPoints.K.squareUp(frontPoints.J.distTo(frontPoints.G));
-  drawLine(frontPoints.K, bustWidthCrossBackGuidPoint, GUIDE_LINE);
+  let bustWidthCrossBackGuidPoint = frontBodice.points.K.squareUp(frontBodice.points.J.distTo(frontBodice.points.G));
+  drawLine(frontBodice.points.K, bustWidthCrossBackGuidPoint, GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 25 A to L
   let figureLength = 8 + 1/2;
-  frontPoints.L = getPointAlongLineDistanceFromPoint([frontPoints.K, bustWidthCrossBackGuidPoint], frontPoints.A, figureLength);
-  drawLine(frontPoints.A, frontPoints.L, GUIDE_LINE);
+  frontBodice.points.L = getPointAlongLineDistanceFromPoint([frontBodice.points.K, bustWidthCrossBackGuidPoint], frontBodice.points.A, figureLength);
+  drawLine(frontBodice.points.A, frontBodice.points.L, GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 26 L to R'
-  frontPoints["R'"] = getPointOnLineClosestToPoint([frontPoints.A, frontPoints.W], frontPoints.L);
-  drawLine(frontPoints.L, frontPoints["R'"], GUIDE_LINE);
+  frontBodice.points["R'"] = getPointOnLineClosestToPoint([frontBodice.points.A, frontBodice.points.W], frontBodice.points.L);
+  drawLine(frontBodice.points.L, frontBodice.points["R'"], GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 27 L to K'
-  drawEulerParallelStart(frontPoints["K'"], frontPoints.L, frontPoints["K'"].squareUp(1));
+  frontBodice.curves["LK'"] = getEulerParallelStart(frontBodice.points["K'"], frontBodice.points.L, frontBodice.points["K'"].squareUp(1));
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 28 L to K';
-  drawEulerParallelStart(frontPoints["K''"], frontPoints.L, frontPoints["K''"].squareUp(1));
+  frontBodice.curves["K'K''"] = getEulerParallelStart(frontBodice.points["K''"], frontBodice.points.L, frontBodice.points["K''"].squareUp(1));
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 29 F to L
   if (!isMasculine) {
-    drawLine(frontPoints.F, frontPoints.L, GUIDE_LINE);
+    drawLine(frontBodice.points.F, frontBodice.points.L, GUIDE_LINE);
   }
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 30 F' to L
   if (!isMasculine) {
-    drawLine(frontPoints["F'"], frontPoints.L, GUIDE_LINE);
+    drawLine(frontBodice.points["F'"], frontBodice.points.L, GUIDE_LINE);
   }
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 31 K to N
   let waistDartLength = 3 + 1/2;
-  frontPoints.N = frontPoints.K.squareUp(- waistDartLength);
-  drawLine(frontPoints.K, frontPoints.N, GUIDE_LINE);
+  frontBodice.points.N = frontBodice.points.K.squareUp(- waistDartLength);
+  drawLine(frontBodice.points.K, frontBodice.points.N, GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 32 K' to N
-  drawLine(frontPoints["K'"], frontPoints.N);
+  drawLine(frontBodice.points["K'"], frontBodice.points.N);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 33 K'' to N
-  drawLine(frontPoints["K''"], frontPoints.N);
+  drawLine(frontBodice.points["K''"], frontBodice.points.N);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 34 Y to P
   let halfHip = 8 + 3/4;
   let halfHipDartGap = 0;
-  if (frontPoints.N.y > frontPoints.Y.y) {
-    pointPPrime = getIntersection(frontPoints["K'"], frontPoints.N, backPoints.G, frontPoints.Y);
-    pointPDoublePrime = getIntersection(frontPoints["K''"], frontPoints.N, backPoints.G, frontPoints.Y);
+  if (frontBodice.points.N.y > frontBodice.points.Y.y) {
+    pointPPrime = getIntersection(frontBodice.points["K'"], frontBodice.points.N, backBodice.points.G, frontBodice.points.Y);
+    pointPDoublePrime = getIntersection(frontBodice.points["K''"], frontBodice.points.N, backBodice.points.G, frontBodice.points.Y);
     halfHipDartGap = pointPPrime.distTo(pointPDoublePrime)
   }
-  frontPoints.P = frontPoints.Y.squareRight(- (halfHip + halfHipDartGap));
+  frontBodice.points.P = frontBodice.points.Y.squareRight(- (halfHip + halfHipDartGap));
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 35 W to Q
   let backHip = 9 + 3/4;
-  frontPoints.Q = frontPoints.W.squareRight(- backHip);
+  frontBodice.points.Q = frontBodice.points.W.squareRight(- backHip);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
@@ -593,34 +592,34 @@ async function drawFrontDraft(backPoints, frontPoints, isMasculine) {
   let bustWidthSLinePoint, sideLevelGuidePoint;
   let sideLevelGuideOffset = 1 + 1/8;
   let sideLevelPointDistance = 10;
-  let bustPointToSideLevelPointDistance = sideLevelPointDistance - frontPoints.L.distTo(frontPoints["R'"]);
+  let bustPointToSideLevelPointDistance = sideLevelPointDistance - frontBodice.points.L.distTo(frontBodice.points["R'"]);
 
   if (!isMasculine) {
-    sideLevelPoint = getIntersection(frontPoints.L, bustWidthCrossBackGuidPoint, frontPoints.R, backPoints.E);
+    sideLevelPoint = getIntersection(frontBodice.points.L, bustWidthCrossBackGuidPoint, frontBodice.points.R, backBodice.points.E);
     bustWidthSLinePoint = sideLevelPoint.squareUp(sideLevelGuideOffset);
     sideLevelGuidePoint = bustWidthSLinePoint.squareRight(- bustPointToSideLevelPointDistance)
     drawLine(bustWidthSLinePoint, sideLevelGuidePoint, GUIDE_LINE);
   } else {
-    bustWidthSLinePoint = getIntersection(frontPoints.L, bustWidthCrossBackGuidPoint, frontPoints.R, backPoints.E);
+    bustWidthSLinePoint = getIntersection(frontBodice.points.L, bustWidthCrossBackGuidPoint, frontBodice.points.R, backBodice.points.E);
     sideLevelGuidePoint = bustWidthSLinePoint.squareRight(-1);
   }
 
-  frontPoints.S = getPointAlongLineDistanceFromPoint([sideLevelGuidePoint, bustWidthSLinePoint], frontPoints.L, bustPointToSideLevelPointDistance);
-  drawLine(frontPoints.L, frontPoints.S, GUIDE_LINE);
+  frontBodice.points.S = getPointAlongLineDistanceFromPoint([sideLevelGuidePoint, bustWidthSLinePoint], frontBodice.points.L, bustPointToSideLevelPointDistance);
+  drawLine(frontBodice.points.L, frontBodice.points.S, GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 39 S to O
   if (!isMasculine) {
-    drawLine(frontPoints.S, frontPoints.O, GUIDE_LINE);
+    drawLine(frontBodice.points.S, frontBodice.points.O, GUIDE_LINE);
   }
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 40 R' to S'
   if (!isMasculine) {
-    frontPoints["S'"] = getIntersection(frontPoints.S, frontPoints.O, frontPoints["R'"], frontPoints["R'"].squareRight(1));
-    drawLine(frontPoints.L, frontPoints["S'"], GUIDE_LINE);
+    frontBodice.points["S'"] = getIntersection(frontBodice.points.S, frontBodice.points.O, frontBodice.points["R'"], frontBodice.points["R'"].squareRight(1));
+    drawLine(frontBodice.points.L, frontBodice.points["S'"], GUIDE_LINE);
   }
   // drawPoints();
 
@@ -628,14 +627,14 @@ async function drawFrontDraft(backPoints, frontPoints, isMasculine) {
   // 41 S' to S''
   if (!isMasculine) {
     let sDoublePrimeDist = 1 + 1/8;
-    frontPoints["S''"] = getPointAlongLine(frontPoints["S'"], frontPoints.O, sDoublePrimeDist);
+    frontBodice.points["S''"] = getPointAlongLine(frontBodice.points["S'"], frontBodice.points.O, sDoublePrimeDist);
   }
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 42 S'' to L
   if (!isMasculine) {
-    drawLine(frontPoints["S''"], frontPoints.L, GUIDE_LINE);
+    drawLine(frontBodice.points["S''"], frontBodice.points.L, GUIDE_LINE);
   }
   // drawPoints();
 
@@ -643,39 +642,37 @@ async function drawFrontDraft(backPoints, frontPoints, isMasculine) {
   // 43 G to I
   let crossBackGuideLength = 6 + 7/8;
   if (isMasculine) {
-    frontPoints.I = frontPoints.G.squareRight(- crossBackGuideLength);
+    frontBodice.points.I = frontBodice.points.G.squareRight(- crossBackGuideLength);
   } else {
-    let cbGuidePoint = frontPoints.G.squareRight(- crossBackGuideLength);
-    let cbDartIntF = getIntersection(cbGuidePoint, frontPoints.G, frontPoints.F, frontPoints.L);
-    let cbDartIntFPrime = getIntersection(cbGuidePoint, frontPoints.G, frontPoints["F'"], frontPoints.L);
+    let cbGuidePoint = frontBodice.points.G.squareRight(- crossBackGuideLength);
+    let cbDartIntF = getIntersection(cbGuidePoint, frontBodice.points.G, frontBodice.points.F, frontBodice.points.L);
+    let cbDartIntFPrime = getIntersection(cbGuidePoint, frontBodice.points.G, frontBodice.points["F'"], frontBodice.points.L);
     let dartDist = cbDartIntF.distTo(cbDartIntFPrime);
-    frontPoints.I = frontPoints.G.squareRight(- (crossBackGuideLength +  dartDist));
+    frontBodice.points.I = frontBodice.points.G.squareRight(- (crossBackGuideLength +  dartDist));
   }
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 44 I to U
-  frontPoints.U = getIntersection(frontPoints.I, frontPoints.I.squareUp(1), frontPoints.S, bustWidthSLinePoint);
-  drawLine(frontPoints.I, frontPoints.U, GUIDE_LINE);
+  frontBodice.points.U = getIntersection(frontBodice.points.I, frontBodice.points.I.squareUp(1), frontBodice.points.S, bustWidthSLinePoint);
+  drawLine(frontBodice.points.I, frontBodice.points.U, GUIDE_LINE);
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 45 L to U
-  if (frontPoints.L.y > frontPoints.S.y) {
-    drawLine(frontPoints.L, frontPoints.U, GUIDE_LINE);
+  if (frontBodice.points.L.y > frontBodice.points.S.y) {
+    drawLine(frontBodice.points.L, frontBodice.points.U, GUIDE_LINE);
   }
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 46 E' to I to S
-  // TODO: This should be a guide line!
-  drawEulerMidpoint(frontPoints["E'"], frontPoints.I, frontPoints.S);
-  console.error("E' to I to S should be a guide line!");
+  frontBodice.curves["E'S_guide"] = getEulerMidpoint(frontBodice.points["E'"], frontBodice.points.I, frontBodice.points.S, {curveStyle: GUIDE_LINE});
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 47 U to T
-  if (frontPoints.L.y > frontPoints.S.y) {
+  if (frontBodice.points.L.y > frontBodice.points.S.y) {
     // TODO: intersect line with a curve
     //       Intersect LU with E'IS to get T
   }
@@ -696,22 +693,38 @@ async function drawFrontDraft(backPoints, frontPoints, isMasculine) {
 let isMasculine = true;
 async function main() {
   let start = performance.now();
-  await drawBackDraft(backPoints, frontPoints);
-  await drawFrontDraft(backPoints, frontPoints, isMasculine);
+  await drawBackDraft(backBodice, frontBodice);
+  await drawFrontDraft(backBodice, frontBodice, isMasculine);
 
-  drawPoints();
+  drawCurves(backBodice.curves);
+  drawCurves(frontBodice.curves);
+  drawPoints(backBodice);
+  drawPoints(frontBodice);
   let end = performance.now();
 
   console.log('start', start, 'end', end, 'runtime', end-start);
 }
-function drawPoints() {
-  Object.keys(backPoints).forEach((key, index) => {
-    drawPoint(backPoints[key]);
-    drawPointLabel(backPoints[key], key);
+
+function drawCurves(curves) {
+  Object.keys(curves).forEach((key, index) => {
+    let curve = curves[key]
+    if (curve) {
+      let curveStyle = curve.curveStyle || {};
+      context.beginPath();
+      context.lineWidth = curveStyle.lineWidth || 3;
+      context.strokeStyle = curveStyle.color || "#000";
+      curve.points.forEach(point => context.lineTo(...point.canvas()));
+      context.stroke();
+    } else {
+      console.error(`Null curve: ${key}`)
+    }
   });
-  Object.keys(frontPoints).forEach((key, index) => {
-    drawPoint(frontPoints[key]);
-    drawPointLabel(frontPoints[key], key, {color: '#900', dir: 'E'});
+}
+
+function drawPoints(pattern) {
+  Object.keys(pattern.points).forEach((key, index) => {
+    drawPoint(pattern.points[key]);
+    drawPointLabel(pattern.points[key], key, {color: pattern.labelColor, dir: pattern.labelDefaultDir});
   });
 }
 main();
