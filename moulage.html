@@ -322,9 +322,8 @@ async function drawBackDraft(backBodice, frontBodice) {
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 44 O to Q'
-  let initialAngleQO = backBodice.points.Q.getAngle(backBodice.points.Q.squareUp(1));
   backBodice.curves.OQ = getEulerPerpendicularWithPointInside(
-    backBodice.points.O, backBodice.points.P, [backBodice.points.R, backBodice.points.Q], initialAngleQO, {isLeftHanded: true}
+    backBodice.points.O, [backBodice.points.P, backBodice.points.Q], [backBodice.points.R, backBodice.points.Q], {isLeftHanded: true}
   );
   backBodice.points["Q'"] = backBodice.curves.OQ.points[0];
   backBodice.points["Q'"].labelDir = "E";
@@ -594,7 +593,25 @@ async function drawFrontDraft(backBodice, frontBodice, isMasculine) {
 
   // await sleep(DEFAULT_SLEEP_TIME);
   // 36 O to Q
-  // TODO: curves
+  let flippedAndOriginalCurves = getFlippedEulerPerpendicularWithPointInside(
+    backBodice.curves.OQ,
+    frontBodice.points.O,
+    [frontBodice.points.P, frontBodice.points.Q],
+    [frontBodice.points.W, frontBodice.points.Q],
+    {isLeftHanded: false}
+  );
+  frontBodice.curves.OQ = flippedAndOriginalCurves.flipped;
+  frontBodice.points["Q'"] = frontBodice.curves.OQ.points[0];
+  frontBodice.points["Q'"].labelDir = "W";
+  frontBodice.curves["WQ'"] = getLine(frontBodice.points.W, frontBodice.points["Q'"]);
+
+  // 36 Part 2, Fixing OQ on Back
+  if (flippedAndOriginalCurves.original !== backBodice.curves.OQ) {
+    backBodice.curves.OQ = flippedAndOriginalCurves.original;
+    backBodice.points["Q'"] = backBodice.curves.OQ.points[0];
+    backBodice.points["Q'"].labelDir = "E";
+    backBodice.curves["RQ'"] = getLine(backBodice.points.R, backBodice.points["Q'"]);
+  }
   // drawPoints();
 
   // await sleep(DEFAULT_SLEEP_TIME);
