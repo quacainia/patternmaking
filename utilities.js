@@ -2,7 +2,7 @@ const BACKGOUND_COLOR = '#FFF';
 const EULER_SCALE_SMALL = 5.4;
 const EULER_SCALE_STD = 6.75;
 const EULER_SCALE_LARGE = 8.4375;
-const GRID_SIZE = 30;
+const GRID_SIZE = 60;
 const GRID_OFFSET = [4,4];
 
 let EULER_MAX_LENGTH = {}
@@ -10,7 +10,54 @@ EULER_MAX_LENGTH[EULER_SCALE_SMALL] = 6.42372;
 EULER_MAX_LENGTH[EULER_SCALE_STD] = 8.02965;
 EULER_MAX_LENGTH[EULER_SCALE_LARGE] = 10.03706;
 
-function grid(size, width, zero) {
+function draw() {
+  const context = canvas.getContext('2d');
+  context.clearRect(0, 0, canvas.width, canvas.height);
+
+  grid(context, GRID_SIZE, 1, GRID_OFFSET);
+  grid(context, GRID_SIZE/2, 1/2, GRID_OFFSET);
+  grid(context, GRID_SIZE/4, 1/4, GRID_OFFSET);
+
+  drawCurves(context, bodiceGuide);
+  drawCurves(context, backBodice);
+  drawCurves(context, frontBodice);
+  drawPoints(context, backBodice);
+  drawPoints(context, frontBodice);
+}
+
+function drawCurves(context, pattern) {
+  Object.keys(pattern.curves).forEach((key, index) => {
+    let curve = pattern.curves[key]
+    if (curve) {
+      let curveStyle = curve.curveStyle || {};
+      context.beginPath();
+      context.lineWidth = curveStyle.lineWidth || 3;
+      context.strokeStyle = curveStyle.color || "#000";
+      curve.points.forEach(point => context.lineTo(...point.canvas()));
+      context.stroke();
+    } else {
+      console.error(`Null curve: ${key}`)
+    }
+  });
+}
+
+function drawPoints(context, pattern) {
+  Object.keys(pattern.points).forEach((key, index) => {
+    drawPoint(pattern.points[key]);
+    drawPointLabel(pattern.points[key], key, {color: pattern.labelColor, dir: pattern.labelDefaultDir});
+  });
+}
+
+function resizeCanvas() {
+  // console.log("hey");
+  let canvas = document.getElementById("myCanvas");
+  canvas.height = window.innerHeight*2;
+  canvas.width = window.innerWidth*2;
+
+  draw()
+}
+
+function grid(context, size, width, zero) {
   for (var i = 0; i*size < canvas.width; i++) {
     context.beginPath();
     context.moveTo(-1, i*size+zero[1]);
@@ -37,10 +84,10 @@ function getLine(start, end, options) {
 
 function drawPoint(point) {
   context.beginPath();
-  context.arc(...point.canvas(), 2, 0, 2 * Math.PI, false);
+  context.arc(...point.canvas(), 4, 0, 2 * Math.PI, false);
   context.fillStyle = "#FFF";
   context.fill();
-  context.lineWidth = 2;
+  context.lineWidth = 3;
   context.strokeStyle = "#900";
   context.stroke();
 }
@@ -53,7 +100,7 @@ function drawPointLabel(point, label, options) {
     dir = point.labelDir;
   }
 
-  context.font = '10pt serif';
+  context.font = '18pt serif';
   context.textAlign = 'center';
   context.textBaseline = 'middle';
   textMetrics = context.measureText(label);
