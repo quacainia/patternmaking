@@ -2,7 +2,7 @@ const BACKGOUND_COLOR = '#FFF';
 const EULER_SCALE_SMALL = 5.4;
 const EULER_SCALE_STD = 6.75;
 const EULER_SCALE_LARGE = 8.4375;
-const GRID_SIZE = 30;
+const GRID_SIZE = 60;
 const GRID_OFFSET = [4,4];
 
 let EULER_MAX_LENGTH = {}
@@ -10,8 +10,54 @@ EULER_MAX_LENGTH[EULER_SCALE_SMALL] = 6.42372;
 EULER_MAX_LENGTH[EULER_SCALE_STD] = 8.02965;
 EULER_MAX_LENGTH[EULER_SCALE_LARGE] = 10.03706;
 
-function grid(size, width, zero) {
-  for (var i = 0; i*size < canvas.width; i++) {
+// const DEFAULT_SLEEP_TIME = 0.2;
+export const GUIDE_LINE = {color: "#555", lineWidth: 1};
+
+export function draw(canvas, bodiceGuide, backBodice, frontBodice) {
+  const context = canvas.getContext('2d');
+  context.clearRect(0, 0, canvas.width, canvas.height);
+
+  grid(canvas, context, GRID_SIZE, 1, GRID_OFFSET);
+  grid(canvas, context, GRID_SIZE/2, 1/2, GRID_OFFSET);
+  grid(canvas, context, GRID_SIZE/4, 1/4, GRID_OFFSET);
+
+  drawCurves(context, bodiceGuide);
+  drawCurves(context, backBodice);
+  drawCurves(context, frontBodice);
+  drawPoints(context, backBodice);
+  drawPoints(context, frontBodice);
+}
+
+export function drawCurves(context, pattern) {
+  Object.keys(pattern.curves).forEach((key) => {
+    let curve = pattern.curves[key]
+    if (curve) {
+      let curveStyle = curve.curveStyle || {};
+      context.beginPath();
+      context.lineWidth = curveStyle.lineWidth || 3;
+      context.strokeStyle = curveStyle.color || "#000";
+      curve.points.forEach(point => context.lineTo(...point.canvas()));
+      context.stroke();
+    } else {
+      console.error(`Null curve: ${key}`)
+    }
+  });
+}
+
+export function drawPoints(context, pattern) {
+  Object.keys(pattern.points).forEach((key) => {
+    drawPoint(context, pattern.points[key]);
+    drawPointLabel(context, pattern.points[key], key, {color: pattern.labelColor, dir: pattern.labelDefaultDir});
+  });
+}
+
+export function resizeCanvas(canvas) {
+  canvas.height = window.innerHeight*2;
+  canvas.width = window.innerWidth*2;
+}
+
+export function grid(canvas, context, size, width, zero) {
+  for (let i = 0; i*size < canvas.width; i++) {
     context.beginPath();
     context.moveTo(-1, i*size+zero[1]);
     context.lineTo(canvas.width+1, i*size+zero[1]);
@@ -20,7 +66,7 @@ function grid(size, width, zero) {
     context.lineCap = 'round';
     context.stroke();
   }
-  for (var i = 0; i*size < canvas.width; i++) {
+  for (let i = 0; i*size < canvas.width; i++) {
     context.beginPath();
     context.moveTo(i*size+zero[0], -1);
     context.lineTo(i*size+zero[0], canvas.height+1);
@@ -31,29 +77,30 @@ function grid(size, width, zero) {
   }
 }
 
-function getLine(start, end, options) {
+export function getLine(start, end, options) {
   return new Curve({points: [start, end], curveStyle: options});
 }
 
-function drawPoint(point) {
+export function drawPoint(context, point) {
   context.beginPath();
-  context.arc(...point.canvas(), 2, 0, 2 * Math.PI, false);
+  context.arc(...point.canvas(), 4, 0, 2 * Math.PI, false);
   context.fillStyle = "#FFF";
   context.fill();
-  context.lineWidth = 2;
+  context.lineWidth = 3;
   context.strokeStyle = "#900";
   context.stroke();
 }
 
-function drawPointLabel(point, label, options) {
+export function drawPointLabel(context, point, label, options) {
   let offsetRight = 0, offsetBottom = 0, textMetrics,
-      {color = "#000", dir = "W"} = options ? options : {};
+      {color = "#000", dir = "W"} = options ? options : {},
+      textWidth, textHeight;
 
   if (point.labelDir) {
     dir = point.labelDir;
   }
 
-  context.font = '10pt serif';
+  context.font = '18pt serif';
   context.textAlign = 'center';
   context.textBaseline = 'middle';
   textMetrics = context.measureText(label);
@@ -86,11 +133,12 @@ function drawPointLabel(point, label, options) {
   context.fillText(label, ...offsetPoint.canvas());
 }
 
-function getMaxEulerLength(scale) {
+export function getMaxEulerLength(scale) {
   let t = 0, T=3, N = 10000, dt=T/N, prevValue = {x:0, y:0},
       origin = new Point([0,0]), newDist, lastDist = 0;
 
   while (N--) {
+    let currentPoint, currentValue, dx, dy, scalePoint;
     dx = Math.cos(t*t) * dt;
     dy = Math.sin(t*t) * dt;
     t += dt;
@@ -112,7 +160,7 @@ function getMaxEulerLength(scale) {
   // console.log("end of loop");
 }
 
-function chooseEulerSize(dist) {
+export function chooseEulerSize(dist) {
   let scale;
   let values = Object.values(EULER_MAX_LENGTH);
   for (let i=0; i<values.length; i++) {
@@ -132,7 +180,7 @@ function chooseEulerSize(dist) {
   }
 }
 
-function getEuler(options) {
+export function getEuler(options) {
   /*
   Options:
   - curveStyle
@@ -188,9 +236,9 @@ function getEuler(options) {
     t0,
     tReverse
   } = options
-  let T = 2, dt = 0.002, t = t0, prevValue = {x: 0, y: 0}, prevDist,
+  let dt = 0.002, t = t0, prevValue = {x: 0, y: 0}, prevDist,
       eulerPointsList = [startPoint], currentDist, startAngle, N = maxPoints-1,
-      curveLength = 0, reverseAngle, flip = false, currentValue = prevValue, midPoint,
+      curveLength = 0, flip = false, currentValue = prevValue, midPoint,
       compensationAngle;
 
   while (N--) {
@@ -264,9 +312,9 @@ function getEuler(options) {
   return new Curve({points: eulerPointsList, curveLength, tMax: t, options});
 }
 
-function chooseEulerLeftHanded(startPoint, endPoint, options) {
+export function chooseEulerLeftHanded(startPoint, endPoint, options) {
   let { initialAngle, midPoint } = options;
-  let startAngle;
+  let diffAngle, endAngle, startAngle;
 
   if (isNaN(initialAngle)) {
     if (midPoint) {
@@ -289,14 +337,14 @@ function chooseEulerLeftHanded(startPoint, endPoint, options) {
   return false;
 }
 
-function getEulerInitialAngle(options) {
+export function getEulerInitialAngle(options) {
   let newOptions = Object.assign({}, options, {maxPoints: 2, rotationAngle: 0});
   let eulerPointsList = getEuler(newOptions).points;
 
   return eulerPointsList[0].getAngle(eulerPointsList[1]);
 }
 
-function getEulerParallelStart(startPoint, endPoint, parallelStartPoint) {
+export function getEulerParallelStart(startPoint, endPoint, parallelStartPoint) {
   let dist, endAngle, isLeftHanded, iter, curve, rotationAngle, scale, t0 = 0;
 
   scale = chooseEulerSize(startPoint.distTo(endPoint));
@@ -304,11 +352,9 @@ function getEulerParallelStart(startPoint, endPoint, parallelStartPoint) {
   endAngle = startPoint.getAngle(endPoint);
   isLeftHanded = chooseEulerLeftHanded(startPoint, endPoint, {initialAngle: rotationAngle});
   dist = startPoint.distTo(endPoint);
-  context.lineWidth = 3;
-  context.strokeStyle = "#000";
 
   for (let i = 1; i<=8; i++) {
-    let angleDiff, lastPoint;
+    let angleDiff, initialAngleEuler, lastPoint, options;
 
     if (iter > 10) {
       throw "runaway loop";
@@ -360,7 +406,7 @@ function getEulerParallelStart(startPoint, endPoint, parallelStartPoint) {
   return curve;
 }
 
-function getEulerParallelEnd(startPoint, endPoint, parallelEndPoint, options) {
+export function getEulerParallelEnd(startPoint, endPoint, parallelEndPoint, options) {
   let curve, dist, endAngle, isLeftHanded, iter=0, parallelAngle, scale, t0 = 0;
   let {insidePoint, outsidePoint} = Object.assign(
     {},
@@ -376,11 +422,9 @@ function getEulerParallelEnd(startPoint, endPoint, parallelEndPoint, options) {
   endAngle = startPoint.getAngle(endPoint);
   isLeftHanded = chooseEulerLeftHanded(startPoint, endPoint, {midPoint: parallelEndPoint});
   dist = startPoint.distTo(endPoint);
-  context.lineWidth = 3;
-  context.strokeStyle = "#000";
 
   for (let i = 1; i<=8; i++) {
-    let angleDiff, lastPoint;
+    let angleDiff, eulerOptions, lastPoint;
 
     if (iter > 10) {
       throw "runaway loop";
@@ -453,7 +497,7 @@ function getEulerParallelEnd(startPoint, endPoint, parallelEndPoint, options) {
   return curve;
 }
 
-function getEulerMidpoint(startPoint, midPoint, endPoint, options) {
+export function getEulerMidpoint(startPoint, midPoint, endPoint, options) {
   let curve, dist, endAngle, isLeftHanded, iter = 0, scale, t0 = 0;
   let {curveStyle} = Object.assign({}, options);
 
@@ -461,15 +505,12 @@ function getEulerMidpoint(startPoint, midPoint, endPoint, options) {
   isLeftHanded = chooseEulerLeftHanded(startPoint, endPoint, {midPoint});
   dist = startPoint.distTo(endPoint);
   endAngle = startPoint.getAngle(endPoint);
-  context.lineWidth = 3;
-  context.strokeStyle = "#000";
 
   for (let i = 1; i<=8; i++) {
-    let angleDiff, lastPoint;
+    let initialCurve, isPointInCurve, rotateAngle;
 
     if (iter > 10) {
       throw "drawEulerMidpoint: Too many iterations.";
-      break;
     }
 
     options = {
@@ -480,7 +521,7 @@ function getEulerMidpoint(startPoint, midPoint, endPoint, options) {
       startPoint,
       t0,
     }
-    let initialCurve = getEuler(options);
+    initialCurve = getEuler(options);
 
     if (!initialCurve.points) {
       if (i > 1) {
@@ -497,13 +538,13 @@ function getEulerMidpoint(startPoint, midPoint, endPoint, options) {
     }
 
     // rotate points
-    let rotateAngle = endAngle - startPoint.getAngle(initialCurve.points[initialCurve.points.length-1]);
+    rotateAngle = endAngle - startPoint.getAngle(initialCurve.points[initialCurve.points.length-1]);
     curve = initialCurve.rotate(rotateAngle);
 
     // // for each point if point is still "inside"
-    let isPointInCurve = true;
+    isPointInCurve = true;
     for (let p=0; p<curve.points.length/10; p++) {
-      pointIndex = p*10
+      let pointIndex = p*10
       if (pointIndex === curve.points.length-1) {
         break;
       }
@@ -534,7 +575,7 @@ function getEulerMidpoint(startPoint, midPoint, endPoint, options) {
   return curve;
 }
 
-function getEulerPerpendicularWithPointInside(endPoint, insidePoints, startLine, options) {
+export function getEulerPerpendicularWithPointInside(endPoint, insidePoints, startLine, options) {
   let {isLeftHanded, maxInsidePointDist} = Object.assign(
     {},
     {
@@ -542,7 +583,7 @@ function getEulerPerpendicularWithPointInside(endPoint, insidePoints, startLine,
     },
     options
   );
-  let curve, dist, pointList, scale, t0 = 0;
+  let curve, dist, iter=0, scale, t0 = 0;
   let initialAngle = endPoint.angleToLine(startLine);
 
   dist = endPoint.distToLine(startLine);
@@ -550,13 +591,10 @@ function getEulerPerpendicularWithPointInside(endPoint, insidePoints, startLine,
   if (isLeftHanded === undefined) {
     isLeftHanded = chooseEulerLeftHanded(insidePoints[0], endPoint, {initialAngle});
   }
-  context.lineWidth = 3;
-  context.strokeStyle = "#000";
-
-  iter = 0;
 
   for (let i = 1; i<=8; i++) {
-    let angleDiff, diffPoint, eulerPointList, initialAngleEuler, lastPoint;
+    let initialAngleEuler, initialCurve, lastPoint, minInsidePointsDist,
+        pointsAreInsideCurve;
 
     if (iter > 10) {
       console.error("drawEulerParallelWithPointInside: Too many iterations.");
@@ -575,7 +613,7 @@ function getEulerPerpendicularWithPointInside(endPoint, insidePoints, startLine,
 
     options.rotationAngle = initialAngle-initialAngleEuler;
 
-    let initialCurve = getEuler(options);
+    initialCurve = getEuler(options);
     lastPoint = initialCurve.points[initialCurve.points.length-1];
 
     if (!initialCurve.points) {
@@ -587,8 +625,7 @@ function getEulerPerpendicularWithPointInside(endPoint, insidePoints, startLine,
     }
 
     // move points
-    curve = initialCurve.move(endPoint.subv(lastPoint))
-    pointList = curve.points;
+    curve = initialCurve.move(endPoint.subv(lastPoint));
 
     // for each point if point is still "inside"
     pointsAreInsideCurve = true;
@@ -618,8 +655,8 @@ function getEulerPerpendicularWithPointInside(endPoint, insidePoints, startLine,
   return curve;
 }
 
-function getEulerOfMeasurementWithInsidePoint(startPoint, insidePoint, endPoint, measurement, maxFarAngle) {
-  let curve, dist, endAngle, isLeftHanded, iter = 0, pointList, scale, t0 = 0, 
+export function getEulerOfMeasurementWithInsidePoint(startPoint, insidePoint, endPoint, measurement) {
+  let curve, dist, endAngle, isLeftHanded, iter = 0, scale, t0 = 0, 
       t0Delta = 0.1, tReverse, options;
   const ITERATIONS = 5;
   // startPoint = startPoint.addv(new Point([0, 5]));
@@ -629,11 +666,8 @@ function getEulerOfMeasurementWithInsidePoint(startPoint, insidePoint, endPoint,
   isLeftHanded = chooseEulerLeftHanded(startPoint, endPoint, {midPoint: insidePoint});
   dist = startPoint.distTo(endPoint);
   endAngle = startPoint.getAngle(endPoint);
-  context.lineWidth = 3;
-  context.strokeStyle = "#000";
 
   for (let i = 1; i<=ITERATIONS; i++) {
-    let angleDiff, lastPoint;
 
     if (iter > 10) {
       console.error("Something went wrong!");
@@ -652,7 +686,7 @@ function getEulerOfMeasurementWithInsidePoint(startPoint, insidePoint, endPoint,
     let initialCurve = getEuler(options);
 
     if (initialCurve.error) {
-      tReversePct = 0.5
+      let tReversePct = 0.5
       for (let ii = 1; ii <=10; ii++) {
         options.tReverse = initialCurve.tMax * tReversePct;
 
@@ -696,7 +730,7 @@ function getEulerOfMeasurementWithInsidePoint(startPoint, insidePoint, endPoint,
   return curve;
 }
 
-function getFlippedEulerPerpendicularWithPointInside(
+export function getFlippedEulerPerpendicularWithPointInside(
     curve, endPoint, insidePoints, startLine, options) {
   let newCurve, originalCurve;
 
@@ -724,14 +758,14 @@ function getFlippedEulerPerpendicularWithPointInside(
   return {flipped: newCurve, original: originalCurve};
 }
 
-function getPointInsideCurve(curve, point) {
+export function getPointInsideCurve(curve, point) {
   let isPointInCurve = true, minDist = curve[0].distTo(point);
   let isLeftHanded = (((curve[0].getAngle(curve[curve.length-1]) - curve[0].getAngle(curve[1])) + 2*Math.PI) % (2*Math.PI) < Math.PI);
 
   for (let p=0; p<curve.length/10; p++) {
     let angleDiff, lineAngle, midPointAngle;
 
-    pointIndex = p*10
+    let pointIndex = p*10
     if (pointIndex === curve.length-1) {
       break;
     }
@@ -749,8 +783,8 @@ function getPointInsideCurve(curve, point) {
   return {isPointInCurve, minDist}
 }
 
-function pixelsToGridVector(values) {
-  return new Point(values.map((d,i) => (d) / GRID_SIZE));
+export function pixelsToGridVector(values) {
+  return new Point(values.map((d) => (d) / GRID_SIZE));
 }
 
 class Point {
@@ -868,8 +902,8 @@ class Point {
   }
 
   toAngleDistance(angle, distance) {
-    y = - Math.sin(angle) * distance + this.y;
-    x = Math.cos(angle) * distance + this.x;
+    let y = - Math.sin(angle) * distance + this.y;
+    let x = Math.cos(angle) * distance + this.x;
     return new Point([x, y]);
   }
 }
@@ -991,7 +1025,7 @@ class Curve {
   }
 }
 
-function getPointAlongLine(point1, point2, distance) {
+export function getPointAlongLine(point1, point2, distance) {
   // https://math.stackexchange.com/a/175906
   let v = point2.subv(point1);
   let n = v.norm()
@@ -999,9 +1033,9 @@ function getPointAlongLine(point1, point2, distance) {
   return point1.addv(u.mult(distance))
 }
 
-function getPointOnLineClosestToPoint(line, point) {
+export function getPointOnLineClosestToPoint(line, point) {
   /*
-  If you have a line and a point that does not lie on the line, this function
+  If you have a line and a point that does not lie on the line, this export function
   will get the point that lies along the line that is closest to the point.
   That would be the intersection point of the line and a normal line that
   passes through the point.
@@ -1013,7 +1047,7 @@ function getPointOnLineClosestToPoint(line, point) {
   return getIntersection(point, perpendicularPoint, line[0], line[1]);
 }
 
-function getPointAlongLineDistanceFromPoint(line, point, distance) {
+export function getPointAlongLineDistanceFromPoint(line, point, distance) {
   /*
   From point you want to draw a line of a specified distance where the
   terminating point lies along the line.
@@ -1022,9 +1056,11 @@ function getPointAlongLineDistanceFromPoint(line, point, distance) {
   point in the line.
   */
 
-  normalPoint = getPointOnLineClosestToPoint(line, point);
-  distanceFromPointToNormal = point.distTo(normalPoint);
-  distanceFromNormalAlongLine = Math.sqrt(distance**2 - distanceFromPointToNormal**2);
+  let solution1, solution2;
+
+  let normalPoint = getPointOnLineClosestToPoint(line, point);
+  let distanceFromPointToNormal = point.distTo(normalPoint);
+  let distanceFromNormalAlongLine = Math.sqrt(distance**2 - distanceFromPointToNormal**2);
   if (isNaN(distanceFromNormalAlongLine)) {
     console.error("getPointAlongLineDistanceFromPoint: distance not close enough to line provides", line, point, distance, distanceFromPointToNormal);
     return null;
@@ -1037,21 +1073,21 @@ function getPointAlongLineDistanceFromPoint(line, point, distance) {
   return solution2;
 }
 
-function getIntersection(line1Point1, line1Point2, line2Point1, line2Point2) {
+export function getIntersection(line1Point1, line1Point2, line2Point1, line2Point2) {
 
-  x1 = line1Point1.values[0];
-  y1 = line1Point1.values[1];
-  x2 = line1Point2.values[0];
-  y2 = line1Point2.values[1];
-  x3 = line2Point1.values[0];
-  y3 = line2Point1.values[1];
-  x4 = line2Point2.values[0];
-  y4 = line2Point2.values[1];
+  let x1 = line1Point1.values[0];
+  let y1 = line1Point1.values[1];
+  let x2 = line1Point2.values[0];
+  let y2 = line1Point2.values[1];
+  let x3 = line2Point1.values[0];
+  let y3 = line2Point1.values[1];
+  let x4 = line2Point2.values[0];
+  let y4 = line2Point2.values[1];
 
   // From Wikipedia / linear algebra
-  D = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
-  Px = ((x1*y2 - y1*x2)*(x3 - x4) - (x1 - x2)*(x3*y4 - y3*x4))/D;
-  Py = ((x1*y2 - y1*x2)*(y3 - y4) - (y1 - y2)*(x3*y4 - y3*x4))/D;
+  let D = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+  let Px = ((x1*y2 - y1*x2)*(x3 - x4) - (x1 - x2)*(x3*y4 - y3*x4))/D;
+  let Py = ((x1*y2 - y1*x2)*(y3 - y4) - (y1 - y2)*(x3*y4 - y3*x4))/D;
   if (Math.abs(Px) === Infinity || Math.abs(Py) === Infinity || isNaN(Px) || isNaN(Py) || Px > frontTop.values[0] || Px < backTop.values[0] || Py > frontBottom.values[1] || Py < frontTop.values[1]) {
     // TODO: Handle these errors better
     console.error("Intersection error:", {Px, Py});
@@ -1060,7 +1096,7 @@ function getIntersection(line1Point1, line1Point2, line2Point1, line2Point2) {
   return new Point([Px, Py]);
 }
 
-function mitreDart(dartPoint, foldToPoint, dartLegFoldToSide, dartLegFoldAwaySide) {
+export function mitreDart(dartPoint, foldToPoint, dartLegFoldToSide, dartLegFoldAwaySide) {
 
   let dartAngle, dartMidPoint, foldToPointRotated, mitredMidPoint;
 
@@ -1079,3 +1115,16 @@ function mitreDart(dartPoint, foldToPoint, dartLegFoldToSide, dartLegFoldAwaySid
 // console.log(EULER_SCALE_SMALL, getMaxEulerLength(EULER_SCALE_SMALL));
 // console.log(EULER_SCALE_STD, getMaxEulerLength(EULER_SCALE_STD));
 // console.log(EULER_SCALE_LARGE, getMaxEulerLength(EULER_SCALE_LARGE));
+
+
+let backTop = new Point([1,1]);
+let backBottom = new Point([1,29]);
+let frontTop = new Point([29,1]);
+let frontBottom = new Point([29,29]);
+
+export let initialPoints = {
+  backBottom,
+  backTop,
+  frontBottom,
+  frontTop,
+};
