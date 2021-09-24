@@ -507,7 +507,7 @@ export function getEulerMidpoint(startPoint, midPoint, endPoint, options) {
   endAngle = startPoint.getAngle(endPoint);
 
   for (let i = 1; i<=8; i++) {
-    let initialCurve, isPointInCurve, rotateAngle;
+    let initialCurve, rotateAngle;
 
     if (iter > 10) {
       throw "drawEulerMidpoint: Too many iterations.";
@@ -542,22 +542,7 @@ export function getEulerMidpoint(startPoint, midPoint, endPoint, options) {
     curve = initialCurve.rotate(rotateAngle);
 
     // // for each point if point is still "inside"
-    isPointInCurve = true;
-    for (let p=0; p<curve.points.length/10; p++) {
-      let pointIndex = p*10
-      if (pointIndex === curve.points.length-1) {
-        break;
-      }
-
-      let lineAngle = curve.points[pointIndex].getAngle(curve.points[pointIndex+1]);
-      let midPointAngle = curve.points[pointIndex].getAngle(midPoint);
-      let angleDiff = (midPointAngle - lineAngle + 2*Math.PI) % (2*Math.PI);
-
-      if ((isLeftHanded && angleDiff > Math.PI) || (!isLeftHanded && angleDiff < Math.PI)) {
-        isPointInCurve = false;
-        break;
-      }
-    }
+    let {isPointInCurve} = getPointInsideCurve(curve.points, midPoint);
     if (isPointInCurve) {
       t0 = t0 - (0.5**i);
     } else {
