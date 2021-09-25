@@ -5,8 +5,10 @@
 </template>
 
 <script type="text/javascript">
+import { mapGetters, mapMutations } from 'vuex';
+
 import {drawBackDraft, drawFrontDraft, setupGuide} from '@/shared/moulage/bodice.js';
-import {draw, resizeCanvas} from '@/shared/moulage/utilities.js';
+import {draw} from '@/shared/moulage/utilities.js';
 
 export default {
   name: 'Workspace',
@@ -31,14 +33,28 @@ export default {
     }
   },
 
+  computed: {
+    ...mapGetters({
+      getCanvas: 'canvas'
+    }),
+  },
+
   created() {
     window.addEventListener("resize", this.resizeCanvas);
   },
 
   methods: {
+    ...mapMutations({
+      mutateCanvasSize: 'CANVAS_SIZE',
+    }),
     resizeCanvas() {
-      resizeCanvas(this.$refs.canvas);
-      draw(this.$refs.canvas, this.bodiceGuide, this.backBodice, this.frontBodice);
+      let width = window.innerWidth * 2;
+      let height = window.innerHeight * 2;
+
+      this.$refs.canvas.width = width;
+      this.$refs.canvas.height = height;
+      this.mutateCanvasSize({width, height});
+      draw(this.$refs.canvas, this.getCanvas, this.bodiceGuide, this.backBodice, this.frontBodice);
     }
   },
 
@@ -66,7 +82,7 @@ export default {
     // console.log(performance.now() - start);
     drawFrontDraft(backBodice, frontBodice, false);
     // console.log('front', performance.now() - start);
-    draw(this.$refs.canvas, bodiceGuide, backBodice, frontBodice);
+    draw(this.$refs.canvas, this.getCanvas, bodiceGuide, backBodice, frontBodice);
     // console.log('draw', performance.now() - start);
 
     this.backBodice = backBodice;
@@ -77,6 +93,12 @@ export default {
   unmounted() {
     window.removeEventListener("resize", this.resizeCanvas);
   },
+
+  watch: {
+    getCanvas() {
+      draw(this.$refs.canvas, this.getCanvas, this.bodiceGuide, this.backBodice, this.frontBodice);
+    }
+  }
 }
 </script>
 
