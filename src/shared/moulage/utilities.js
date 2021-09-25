@@ -3,29 +3,40 @@ const EULER_SCALE_SMALL = 5.4;
 const EULER_SCALE_STD = 6.75;
 const EULER_SCALE_LARGE = 8.4375;
 const GRID_SIZE = 60;
-const GRID_OFFSET = [4,4];
 
 let EULER_MAX_LENGTH = {}
 EULER_MAX_LENGTH[EULER_SCALE_SMALL] = 6.42372;
 EULER_MAX_LENGTH[EULER_SCALE_STD] = 8.02965;
 EULER_MAX_LENGTH[EULER_SCALE_LARGE] = 10.03706;
 
-// const DEFAULT_SLEEP_TIME = 0.2;
 export const GUIDE_LINE = {color: "#555", lineWidth: 1};
 
-export function draw(canvas, bodiceGuide, backBodice, frontBodice) {
+export function draw(canvas, canvasOptions, bodiceGuide, backBodice, frontBodice) {
+  const scale = canvasOptions.zoom;
   const context = canvas.getContext('2d');
   context.clearRect(0, 0, canvas.width, canvas.height);
+  context.save();
+  context.scale(scale, scale);
+  context.translate(canvasOptions.pan.x, canvasOptions.pan.y);
 
-  grid(canvas, context, GRID_SIZE, 1, GRID_OFFSET);
-  grid(canvas, context, GRID_SIZE/2, 1/2, GRID_OFFSET);
-  grid(canvas, context, GRID_SIZE/4, 1/4, GRID_OFFSET);
+  const canvasDetails = {
+    width: canvas.width/scale,
+    height: canvas.height/scale,
+    offset: {
+      ...canvasOptions.pan,
+    }
+  };
+
+  grid(canvasDetails, context, GRID_SIZE, 1);
+  grid(canvasDetails, context, GRID_SIZE/2, 1/2);
+  grid(canvasDetails, context, GRID_SIZE/4, 1/4);
 
   drawCurves(context, bodiceGuide);
   drawCurves(context, backBodice);
   drawCurves(context, frontBodice);
   drawPoints(context, backBodice);
   drawPoints(context, frontBodice);
+  context.restore();
 }
 
 export function drawCurves(context, pattern) {
@@ -51,25 +62,22 @@ export function drawPoints(context, pattern) {
   });
 }
 
-export function resizeCanvas(canvas) {
-  canvas.height = window.innerHeight*2;
-  canvas.width = window.innerWidth*2;
-}
-
-export function grid(canvas, context, size, width, zero) {
-  for (let i = 0; i*size < canvas.width; i++) {
+export function grid(canvasDetails, context, size, width) {
+  let xOffset = (canvasDetails.offset.x % size) - canvasDetails.offset.x;
+  let yOffset = (canvasDetails.offset.y % size) - canvasDetails.offset.y;
+  for (let i = 0; i*size < canvasDetails.height; i++) {
     context.beginPath();
-    context.moveTo(-1, i*size+zero[1]);
-    context.lineTo(canvas.width+1, i*size+zero[1]);
+    context.moveTo(-1+xOffset, i*size+yOffset);
+    context.lineTo(canvasDetails.width+1+xOffset, i*size+yOffset);
     context.lineWidth = width;
     context.strokeStyle = "#DDD"
     context.lineCap = 'round';
     context.stroke();
   }
-  for (let i = 0; i*size < canvas.width; i++) {
+  for (let i = 0; i*size < canvasDetails.width; i++) {
     context.beginPath();
-    context.moveTo(i*size+zero[0], -1);
-    context.lineTo(i*size+zero[0], canvas.height+1);
+    context.moveTo(i*size+xOffset, -1+yOffset);
+    context.lineTo(i*size+xOffset, canvasDetails.height+1+yOffset);
     context.lineWidth = width;
     context.strokeStyle = "#DDD"
     context.lineCap = 'round';
@@ -789,7 +797,7 @@ class Point {
   }
 
   gridToCanvasCoordinates() {
-    return this.values.map((d,i) => d*GRID_SIZE+GRID_OFFSET[i]);
+    return this.values.map((d) => d*GRID_SIZE);
   }
 
   add(value) {
