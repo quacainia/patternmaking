@@ -8,7 +8,7 @@
 import { mapGetters, mapMutations } from 'vuex';
 
 import {drawBackDraft, drawFrontDraft, setupGuide} from '@/shared/moulage/bodice.js';
-import {draw} from '@/shared/moulage/utilities.js';
+import {draw, GRID_SIZE, WORKSPACE_HEIGHT, WORKSPACE_WIDTH} from '@/shared/moulage/utilities.js';
 
 export default {
   name: 'Workspace',
@@ -45,7 +45,8 @@ export default {
 
   methods: {
     ...mapMutations({
-      mutateCanvasSize: 'CANVAS_SIZE',
+      mutateCanvasSize: "CANVAS_SIZE",
+      mutateFitZoom: "FIT_ZOOM",
     }),
     resizeCanvas() {
       let width = window.innerWidth * 2;
@@ -55,6 +56,12 @@ export default {
       this.$refs.canvas.height = height;
       this.mutateCanvasSize({width, height});
       draw(this.$refs.canvas, this.getCanvas, this.bodiceGuide, this.backBodice, this.frontBodice);
+      if (this.getCanvas.zoomFit) {
+        this.mutateFitZoom({
+          width: WORKSPACE_WIDTH * GRID_SIZE,
+          height: WORKSPACE_HEIGHT * GRID_SIZE,
+        });
+      }
     }
   },
 

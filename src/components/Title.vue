@@ -5,9 +5,11 @@
         Moulage
       </h1>
     </div>
-    <div>
+    <div class="zoom">
       <button @click="zoom(false)">-</button>
       <button @click="zoom(true)">+</button>
+      <br />
+      <button @click="fitZoom">Fit</button>
     </div>
     <div>
       <table>
@@ -44,6 +46,7 @@
 
 <script>
 import { mapGetters, mapMutations } from 'vuex';
+import {GRID_SIZE, WORKSPACE_HEIGHT, WORKSPACE_WIDTH} from '@/shared/moulage/utilities.js';
 
 export default {
   name: 'Title',
@@ -59,9 +62,16 @@ export default {
 
   methods: {
     ...mapMutations({
+      mutateFitZoom: 'FIT_ZOOM',
       mutatePan: 'PAN',
       mutateZoom: 'ZOOM',
     }),
+    fitZoom() {
+      this.mutateFitZoom({
+        width: WORKSPACE_WIDTH * GRID_SIZE,
+        height: WORKSPACE_HEIGHT * GRID_SIZE,
+      });
+    },
     pan(x, y) {
       this.mutatePan({x, y});
     },
@@ -83,5 +93,8 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+.zoom {
+  text-align: center;
 }
 </style>
