@@ -2,7 +2,9 @@ const BACKGOUND_COLOR = '#FFF';
 const EULER_SCALE_SMALL = 5.4;
 const EULER_SCALE_STD = 6.75;
 const EULER_SCALE_LARGE = 8.4375;
-const GRID_SIZE = 60;
+export const GRID_SIZE = 60;
+export const WORKSPACE_WIDTH = 30;
+export const WORKSPACE_HEIGHT = 30;
 
 let EULER_MAX_LENGTH = {}
 EULER_MAX_LENGTH[EULER_SCALE_SMALL] = 6.42372;
@@ -16,12 +18,13 @@ export function draw(canvas, canvasOptions, bodiceGuide, backBodice, frontBodice
   const context = canvas.getContext('2d');
   context.clearRect(0, 0, canvas.width, canvas.height);
   context.save();
+  context.translate(canvasOptions.pan.x + canvasOptions.pan.xPadding, canvasOptions.pan.y);
   context.scale(scale, scale);
-  context.translate(canvasOptions.pan.x, canvasOptions.pan.y);
 
   const canvasDetails = {
     width: canvas.width/scale,
     height: canvas.height/scale,
+    scale,
     offset: {
       ...canvasOptions.pan,
     }
@@ -63,21 +66,25 @@ export function drawPoints(context, pattern) {
 }
 
 export function grid(canvasDetails, context, size, width) {
-  let xOffset = (canvasDetails.offset.x % size) - canvasDetails.offset.x;
-  let yOffset = (canvasDetails.offset.y % size) - canvasDetails.offset.y;
-  for (let i = 0; i*size < canvasDetails.height; i++) {
+  let {scale, offset} = canvasDetails;
+  let {x, xPadding, y} = offset;
+  let xOffset = (x + xPadding) / scale;
+  let yOffset = y / scale;
+  let startX = (xOffset % size) - xOffset - size;
+  let startY = (yOffset % size) - yOffset - size;
+  for (let i = 0; (i-2)*size < canvasDetails.height; i++) {
     context.beginPath();
-    context.moveTo(-1+xOffset, i*size+yOffset);
-    context.lineTo(canvasDetails.width+1+xOffset, i*size+yOffset);
+    context.moveTo(- 1 - xOffset, i*size+startY);
+    context.lineTo(canvasDetails.width + 1 - xOffset, i*size+startY);
     context.lineWidth = width;
     context.strokeStyle = "#DDD"
     context.lineCap = 'round';
     context.stroke();
   }
-  for (let i = 0; i*size < canvasDetails.width; i++) {
+  for (let i = 0; (i-2)*size < canvasDetails.width; i++) {
     context.beginPath();
-    context.moveTo(i*size+xOffset, -1+yOffset);
-    context.lineTo(i*size+xOffset, canvasDetails.height+1+yOffset);
+    context.moveTo(i*size+startX, -1 - yOffset);
+    context.lineTo(i*size+startX, canvasDetails.height + 1 - yOffset);
     context.lineWidth = width;
     context.strokeStyle = "#DDD"
     context.lineCap = 'round';

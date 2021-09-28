@@ -1,71 +1,24 @@
 <template>
   <div class="home">
-    <h1>Welcome</h1>
-    <div>
-      <button @click="zoom(false)">-</button>
-      <button @click="zoom(true)">+</button>
-    </div>
-    <div>
-      <table>
-        <tr>
-          <td></td>
-          <td>
-            <button @click="pan(0, 60)">^</button>
-          </td>
-          <td></td>
-        </tr>
-        <tr>
-          <td>
-            <button @click="pan(-60, 0)">&lt;</button>
-          </td>
-          <td>
-            <button @click="resetPan()">•</button>
-          </td>
-          <td>
-            <button @click="pan(60, 0)">&gt;</button>
-          </td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>
-            <button @click="pan(0, -60)">v</button>
-          </td>
-          <td></td>
-        </tr>
-      </table>
-    </div>
+
+    <h3 class="title">
+      Welcome to Making a Moulage
+    </h3>
+
+    <p>
+    This page will guide you through making your very own moulage for a starting basis for pattern making custom fit garments. It will guide you through drafting a pattern based off of your own measurements.
+    </p>
+
+    <p>
+      <router-link to="/measurements">Get started!</router-link>
+    </p>
   </div>
 </template>
 
 <script>
-import { mapGetters, mapMutations } from 'vuex';
-
-export default {
-  name: 'Home',
-
-  computed: {
-    ...mapGetters({
-      getCanvas: 'canvas',
-    }),
-  },
-
-  methods: {
-    ...mapMutations({
-      mutatePan: 'PAN',
-      mutateZoom: 'ZOOM',
-    }),
-    pan(x, y) {
-      this.mutatePan({x, y});
-    },
-    resetPan() {
-      this.mutatePan({reset: true});
-    },
-    zoom(shouldZoomIn) {
-      
-      this.mutateZoom(shouldZoomIn);
-    },
-  }
-}
-
-
 </script>
+
+<style lang="scss">
+.home {
+}
+</style>
