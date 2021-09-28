@@ -1,18 +1,28 @@
 <template>
   <Workspace></Workspace>
-  <div class="info-box">
+  <Tile>
+    <Title />
+
+    <p class="warning">
+      <strong>Heads up!</strong> This page is currently feature incomplete and in demo mode only. <router-link to="/demo">More info.</router-link>
+    </p>
+
     <router-view/>
-  </div>
+  </Tile>
 </template>
 
 <script type="text/javascript">
 // @ is an alias to /src
-import Workspace from '@/components/Workspace.vue'
+import Workspace from '@/components/Workspace.vue';
+import Tile from '@/components/Tile.vue';
+import Title from '@/components/Title.vue';
 
 export default {
   name: 'Home',
   components: {
-    Workspace
+    Tile,
+    Title,
+    Workspace,
   }
 }
 </script>
@@ -49,16 +59,22 @@ body {
   background-color: #FFF;
   font-family: Fenix, serif;
 }
-.info-box {
-  z-index: 100;
-  position: absolute;
-  top: 10px;
-  left: 300px;
-  width: 300px;
-  background-color: #FFF;
-  border: 1px #27F solid;
-  box-shadow: 0px 0px 10px 1px rgba(0, 0, 0, 0.5);
-  padding: 5px;
-  overflow: auto;
+a {
+  color: #27F;
+  text-decoration: none;
+  cursor: pointer;
+}
+p.warning {
+  color:red;
+}
+h3.title{
+  margin: 0px;
+}
+h1.title {
+  margin: 0px;
+  a {
+    color: #27F;
+    text-decoration: none;
+  }
 }
 </style>
