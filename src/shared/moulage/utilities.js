@@ -1,19 +1,8 @@
-const BACKGOUND_COLOR = '#FFF';
-const EULER_SCALE_SMALL = 5.4;
-const EULER_SCALE_STD = 6.75;
-const EULER_SCALE_LARGE = 8.4375;
-export const GRID_SIZE = 60;
-export const WORKSPACE_WIDTH = 30;
-export const WORKSPACE_HEIGHT = 30;
-
-let EULER_MAX_LENGTH = {}
-EULER_MAX_LENGTH[EULER_SCALE_SMALL] = 6.42372;
-EULER_MAX_LENGTH[EULER_SCALE_STD] = 8.02965;
-EULER_MAX_LENGTH[EULER_SCALE_LARGE] = 10.03706;
-
-export const GUIDE_LINE = {color: "#555", lineWidth: 1};
+import {Point, Curve} from './classes.js';
+import {BACKGOUND_COLOR, EULER_MAX_LENGTH, EULER_SCALE_LARGE, EULER_SCALE_STD, GRID_SIZE} from './constants.js';
 
 export function draw(canvas, canvasOptions, bodiceGuide, backBodice, frontBodice) {
+  // console.log('bodiceGuide', bodiceGuide)
   const scale = canvasOptions.zoom;
   const context = canvas.getContext('2d');
   context.clearRect(0, 0, canvas.width, canvas.height);
@@ -93,7 +82,7 @@ export function grid(canvasDetails, context, size, width) {
 }
 
 export function getLine(start, end, options) {
-  return new Curve({points: [start, end], curveStyle: options});
+  return new Curve({points: [start, end], options});
 }
 
 export function drawPoint(context, point) {
@@ -787,250 +776,12 @@ export function pixelsToGridVector(values) {
   return new Point(values.map((d) => (d) / GRID_SIZE));
 }
 
-class Point {
-  // Really a vector class, but try to ignore that
-
-  constructor(values) {
-    this.values = values;
-    this.x = values[0];
-    this.y = values[1];
-  }
-
-  *canvas() {
-    let points = this.gridToCanvasCoordinates();
-    for(const value of points) {
-      yield value;
-    }
-  }
-
-  gridToCanvasCoordinates() {
-    return this.values.map((d) => d*GRID_SIZE);
-  }
-
-  add(value) {
-    return new Point(this.values.map(d => d + value));
-  }
-
-  addv(point2) {
-    if (this.values.length === point2.values.length) {
-      let res = []
-      for(let key in this.values) {
-        res[key] = this.values[key] + point2.values[key]
-      }
-      return new Point(res)
-    }
-  }
-
-  addvCanvas(values) {
-    return this.addv(pixelsToGridVector(values));
-  }
-
-  angleToLine(line) {
-    return getPointOnLineClosestToPoint(line, this).getAngle(this);
-  }
-
-  canvasX() {
-    return this.gridToCanvasCoordinates()[0];
-  }
-
-  canvasY() {
-    return this.gridToCanvasCoordinates()[1];
-  }
-
-  distTo(point2) {
-    let p = this.subv(point2);
-    return Math.sqrt(p.values[0]**2 + p.values[1]**2);
-  }
-
-  distToLine(line) {
-    let pointOnLine = getPointOnLineClosestToPoint(line, this);
-    return this.distTo(pointOnLine);
-  }
-
-  div(value) {
-    return this.mult(1/value);
-  }
-
-  dot(point2) {
-    return this.values.map(
-      (d,i) => d * point2.values[i]
-    ).reduce(
-      (a,b) => a + b
-    );
-  }
-
-  getAngle(point2) {
-    return -Math.atan2((point2.y - this.y), (point2.x - this.x));
-  }
-
-  mult(value) {
-    return new Point(this.values.map(d => d * value));
-  }
-
-  norm() {
-    return Math.sqrt(this.dot(this));
-  }
-
-  rotate(centerPoint, angle) {
-    let rotatedX = Math.cos(angle) * (this.x - centerPoint.x) + Math.sin(angle) * (this.y - centerPoint.y) + centerPoint.x;
-    let rotatedY = Math.cos(angle) * (this.y - centerPoint.y) - Math.sin(angle) * (this.x - centerPoint.x) + centerPoint.y;
-    return new Point([rotatedX,rotatedY]);
-  }
-
-  squareRight(distance) {
-    let values = [this.values[0]+distance, this.values[1]];
-    return new Point(values);
-  }
-
-  squareUp(distance) {
-    let values = [this.values[0], this.values[1]-distance];
-    return new Point(values);
-  }
-
-  sub(value) {
-    return new Point(this.values.map(d => d - value));
-  }
-
-  subv(point2) {
-    if (this.values.length === point2.values.length) {
-      let res = []
-      for(let key in this.values) {
-        res[key] = this.values[key] - point2.values[key]
-      }
-      return new Point(res)
-    }
-  }
-
-  toAngleDistance(angle, distance) {
-    let y = - Math.sin(angle) * distance + this.y;
-    let x = Math.cos(angle) * distance + this.x;
-    return new Point([x, y]);
-  }
-}
-
-class Curve {
-  // A long list of points to display as a curve
-
-  constructor(values) {
-    this.points = values.points || [];
-    this.options = values.options || {};
-
-    this.curveLength = values.curveLength || null;
-    this.curveStyle = this.options.curveStyle || values.curveStyle;
-    this.endDistance = this.options.endDistance || null;
-    this.endPoint = this.points[this.points.length - 1];
-    this.error = values.error;
-    this.isLeftHanded = this.options.isLeftHanded || false;
-    this.midPoint = values.midPoint;
-    this.mutations = values.mutations || [];
-
-    if (values.rotationAngle !== undefined) {
-      this.rotationAngle = values.rotationAngle;
-    } else {
-      this.rotationAngle = this.options.rotationAngle;
-    }
-
-    this.scale = this.options.scale;
-    this.startPoint = this.points[0];
-    this.t0 = this.options.t0;
-    this.tMax = values.tMax;
-  }
-
-  flip(index) {
-    let angle;
-
-    let newMutations = [...this.mutations];
-    newMutations.push({
-      type: "flip",
-      index,
-    })
-
-    if (index == 0) {
-      angle = this.points[index].getAngle(this.points[index+1]);
-    } else if (index === this.points.length-1) {
-      angle = this.points[index-1].getAngle(this.points[index]);
-    } else {
-      angle = this.points[index-1].getAngle(this.points[index+1]);
-    }
-
-    let p1 = this.points[index];
-    let p2 = p1.toAngleDistance(angle, 1);
-
-    let dx = p2.x - p1.x;
-    let dy = p2.y - p1.y;
-
-    let a = (dx**2 - dy**2) / (dx**2 + dy**2);
-    let b = 2 * dx * dy / (dx**2 + dy**2);
-
-    let newPoints = this.points.map(p => new Point([
-      a * (p.x - p1.x) + b*(p.y - p1.y) + p1.x,
-      b * (p.x - p1.x) - a*(p.y - p1.y) + p1.y
-    ]));
-
-    return new Curve(Object.assign(
-      {},
-      this,
-      {
-        points: newPoints,
-        mutations: newMutations,
-      }
-    ));
-  }
-
-  move(vector) {
-    let newMutations = [...this.mutations];
-    newMutations.push({
-      type: "move",
-      vector,
-    });
-
-    let newPoints = this.points.map(point => point.addv(vector));
-
-    return new Curve(Object.assign(
-      {},
-      this,
-      {
-        points: newPoints,
-        mutations: newMutations,
-      }
-    ));
-  }
-
-  rotate(angle, options) {
-    let {origin} = Object.assign(
-      {},
-      {
-        origin: this.points[0],
-      },
-      options
-    );
-
-    let newMutations = [...this.mutations];
-    newMutations.push({
-      type: "rotate",
-      origin,
-      angle,
-    });
-
-    let newPoints = this.points.map(point => point.rotate(origin, angle));
-    return new Curve(Object.assign(
-      {},
-      this,
-      {
-        points: newPoints,
-        rotationAngle: (this.rotationAngle || 0) + angle,
-        mutations: newMutations,
-      }
-    ));
-  }
-}
-
-export function getPointAlongLine(point1, point2, distance) {
+export function getPointAlongLine(point1, point2, distance, options) {
   // https://math.stackexchange.com/a/175906
   let v = point2.subv(point1);
   let n = v.norm()
   let u = v.div(n);
-  return point1.addv(u.mult(distance))
+  return point1.addv(u.mult(distance), options);
 }
 
 export function getPointOnLineClosestToPoint(line, point) {
@@ -1073,7 +824,7 @@ export function getPointAlongLineDistanceFromPoint(line, point, distance) {
   return solution2;
 }
 
-export function getIntersection(line1Point1, line1Point2, line2Point1, line2Point2) {
+export function getIntersection(line1Point1, line1Point2, line2Point1, line2Point2, canvas) {
 
   let x1 = line1Point1.values[0];
   let y1 = line1Point1.values[1];
@@ -1088,7 +839,7 @@ export function getIntersection(line1Point1, line1Point2, line2Point1, line2Poin
   let D = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
   let Px = ((x1*y2 - y1*x2)*(x3 - x4) - (x1 - x2)*(x3*y4 - y3*x4))/D;
   let Py = ((x1*y2 - y1*x2)*(y3 - y4) - (y1 - y2)*(x3*y4 - y3*x4))/D;
-  if (Math.abs(Px) === Infinity || Math.abs(Py) === Infinity || isNaN(Px) || isNaN(Py) || Px > frontTop.values[0] || Px < backTop.values[0] || Py > frontBottom.values[1] || Py < frontTop.values[1]) {
+  if (Math.abs(Px) === Infinity || Math.abs(Py) === Infinity || isNaN(Px) || isNaN(Py) || Px > canvas.x.max || Px < canvas.x.min || Py > canvas.y.max || Py < canvas.y.min) {
     // TODO: Handle these errors better
     console.error("Intersection error:", {Px, Py});
     return null
@@ -1117,14 +868,4 @@ export function mitreDart(dartPoint, foldToPoint, dartLegFoldToSide, dartLegFold
 // console.log(EULER_SCALE_LARGE, getMaxEulerLength(EULER_SCALE_LARGE));
 
 
-let backTop = new Point([1,1]);
-let backBottom = new Point([1,29]);
-let frontTop = new Point([29,1]);
-let frontBottom = new Point([29,29]);
 
-export let initialPoints = {
-  backBottom,
-  backTop,
-  frontBottom,
-  frontTop,
-};

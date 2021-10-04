@@ -46,7 +46,7 @@
 
 <script>
 import { mapGetters, mapMutations } from 'vuex';
-import {GRID_SIZE, WORKSPACE_HEIGHT, WORKSPACE_WIDTH} from '@/shared/moulage/utilities.js';
+import {GRID_SIZE, WORKSPACE_HEIGHT, WORKSPACE_WIDTH} from '@/shared/moulage/constants.js';
 
 export default {
   name: 'Title',

@@ -1,30 +1,79 @@
-import * as utilities from './utilities.js'
+import {Pattern, PatternPiece, Point} from '@/shared/moulage/classes.js';
+import * as constants from '@/shared/moulage/constants.js';
+import * as utilities from '@/shared/moulage/utilities.js';
 
-export function setupGuide(bodiceGuide) {
-  let {backBottom, backTop, frontBottom, frontTop} = utilities.initialPoints;
-  bodiceGuide.curves.centerFront = utilities.getLine(frontTop, frontBottom, utilities.GUIDE_LINE);
-  bodiceGuide.curves.centerBack = utilities.getLine(backTop, backBottom, utilities.GUIDE_LINE);
+let backTop = new Point([1,1], {name: 'backTop', isGuide: true});
+let backBottom = new Point([1,29], {name: 'backTop', isGuide: true});
+let frontTop = new Point([29,1], {name: 'frontTop', isGuide: true});
+let frontBottom = new Point([29,29], {name: 'frontBottom', isGuide: true});
+
+export let initialPoints = {
+  backBottom,
+  backTop,
+  frontBottom,
+  frontTop,
+};
+
+export function setupGuide(pattern) {
+  let {backBottom, backTop, frontBottom, frontTop} = initialPoints;
+
+  pattern.addStep({
+    actions: [
+      utilities.getLine(backTop, backBottom, {isGuide: true, name: 'centerBack'}),
+      backBottom,
+      backTop,
+    ],
+    name: 'centerBack',
+    patternPieceName: 'guide',
+    instructions: 'Draw a vertical guide line 1" from the left side of the page, and at least 28" long.', // TODO: guide lines are currently arbitrary size
+  });
+
+  pattern.addStep({
+    actions: [
+      utilities.getLine(frontTop, frontBottom, {isGuide: true, name: 'centerFront'}),
+      frontBottom,
+      frontTop,
+    ],
+    name: 'centerFront',
+    patternPieceName: 'guide',
+    instructions: 'Draw a vertical guide line 1" from the right side of the page, and at least 28" long, mirroring the initial guide line.', // TODO: guide lines are currently arbitrary size
+  });
 }
 
-export function drawBackDraft(backBodice, frontBodice, bodiceGuide) {
-  let {backBottom, backTop, frontBottom, frontTop} = utilities.initialPoints;
+export function drawBackDraft(pattern) {
+  let {backBottom, backTop, frontBottom, frontTop} = initialPoints;
 
   // 3 R Across - Hip Line
-  backBodice.points.R = utilities.getPointAlongLine(backBottom, backTop, 1);
-  frontBodice.points.W = utilities.getPointAlongLine(frontBottom, frontTop, 1);
-  bodiceGuide.curves.RW = utilities.getLine(backBodice.points.R, frontBodice.points.W, utilities.GUIDE_LINE);
+  let R = utilities.getPointAlongLine(backBottom, backTop, 1, {name: 'R', patternPieceName: 'back'});
+  let W = utilities.getPointAlongLine(frontBottom, frontTop, 1, {name: 'W', patternPieceName: 'front'});
+  pattern.addStep({
+    actions: [
+      R,
+      W,
+      utilities.getLine(R, W, {isGuide: true, name: 'RW'}),
+    ],
+    patternPieceName: 'guide',
+  });
+  // backBodice.points.R = utilities.getPointAlongLine(backBottom, backTop, 1);
+  // frontBodice.points.W = utilities.getPointAlongLine(frontBottom, frontTop, 1);
+  // bodiceGuide.curves.RW = utilities.getLine(backBodice.points.R, frontBodice.points.W, constants.GUIDE_LINE);
+
+  return;
+}
+
+export function tempDrawBackDraft(backBodice, frontBodice, bodiceGuide) {
 
   // 4 R to F + Square - Waist Measurement
   let waistLevel = 8 + 1/4;
   backBodice.points.F = utilities.getPointAlongLine(backBodice.points.R, backTop, waistLevel);
   frontBodice.points.J = utilities.getPointAlongLine(frontBodice.points.W, frontTop, waistLevel);
-  bodiceGuide.curves.FJ = utilities.getLine(backBodice.points.F, frontBodice.points.J, utilities.GUIDE_LINE);
+  bodiceGuide.curves.FJ = utilities.getLine(backBodice.points.F, frontBodice.points.J, constants.GUIDE_LINE);
 
   // 5 F to G + Square - Half Hip
   let halfHipLevel = 3 + 3/4;
   backBodice.points.G = utilities.getPointAlongLine(backBodice.points.F, backBodice.points.R, halfHipLevel);
   frontBodice.points.Y = utilities.getPointAlongLine(frontBodice.points.J, frontBodice.points.W, halfHipLevel);
-  bodiceGuide.curves.GY = utilities.getLine(backBodice.points.G, frontBodice.points.Y, utilities.GUIDE_LINE);
+  bodiceGuide.curves.GY = utilities.getLine(backBodice.points.G, frontBodice.points.Y, constants.GUIDE_LINE);
 
   // 6 F to A - Neck Line
   let waistToNeck = 16 + 1/4;
@@ -34,26 +83,26 @@ export function drawBackDraft(backBodice, frontBodice, bodiceGuide) {
   let bustLevel = 8;
   backBodice.points.E = utilities.getPointAlongLine(backBodice.points.F, backTop, bustLevel);
   frontBodice.points.R = utilities.getPointAlongLine(frontBodice.points.J, frontTop, bustLevel);
-  bodiceGuide.curves.ER = utilities.getLine(backBodice.points.E, frontBodice.points.R, utilities.GUIDE_LINE);
+  bodiceGuide.curves.ER = utilities.getLine(backBodice.points.E, frontBodice.points.R, constants.GUIDE_LINE);
 
   // 8 E to D - Crossback Level. Halfway from E to A
   let crossbackLevel = 4 + 1/8
   backBodice.points.D = utilities.getPointAlongLine(backBodice.points.E, backTop, crossbackLevel);
   frontBodice.points.G = utilities.getPointAlongLine(frontBodice.points.R, frontTop, crossbackLevel);
-  bodiceGuide.curves.DG = utilities.getLine(backBodice.points.D, frontBodice.points.G, utilities.GUIDE_LINE);
+  bodiceGuide.curves.DG = utilities.getLine(backBodice.points.D, frontBodice.points.G, constants.GUIDE_LINE);
   backBodice.curves.DA = utilities.getLine(backBodice.points.D, backBodice.points.A);
 
   // 9 A to B - Back Neckline
   let necklineBase = 3;
   backBodice.points.B = backBodice.points.A.squareRight(necklineBase);
-  backBodice.curves.BA = utilities.getLine(backBodice.points.B, backBodice.points.A, utilities.GUIDE_LINE);
+  backBodice.curves.BA = utilities.getLine(backBodice.points.B, backBodice.points.A, constants.GUIDE_LINE);
 
   // 9 A to B - Back Neckline utilities.GUIDE across
   let necklineHeight = 1;
   backBodice.points.C = backBodice.points.B.squareUp(necklineHeight);
 
   // 10 B to C - Back Neckline utilities.GUIDE up
-  backBodice.curves.BC = utilities.getLine(backBodice.points.B, backBodice.points.C, utilities.GUIDE_LINE);
+  backBodice.curves.BC = utilities.getLine(backBodice.points.B, backBodice.points.C, constants.GUIDE_LINE);
 
   // 11 A to C - Neckline curve
   backBodice.curves.AC = utilities.getEulerParallelStart(backBodice.points.A, backBodice.points.C, backBodice.points.B);
@@ -64,12 +113,12 @@ export function drawBackDraft(backBodice, frontBodice, bodiceGuide) {
 
   // 13 W to K
   backBodice.points.K = backBodice.points.W.addv(backBodice.points.E.subv(backBodice.points.D));
-  backBodice.curves.WK = utilities.getLine(backBodice.points.W, backBodice.points.K, utilities.GUIDE_LINE);
+  backBodice.curves.WK = utilities.getLine(backBodice.points.W, backBodice.points.K, constants.GUIDE_LINE);
 
   // 14 W to H - Up from W
   let backNeck = 3 + 1/2;
   backBodice.points.H = backBodice.points.W.squareUp(backNeck);
-  backBodice.curves.WH = utilities.getLine(backBodice.points.W, backBodice.points.H, utilities.GUIDE_LINE);
+  backBodice.curves.WH = utilities.getLine(backBodice.points.W, backBodice.points.H, constants.GUIDE_LINE);
 
   // 15 H to H'
   backBodice.points["H'"] = backBodice.points.H.squareRight(1/2);
@@ -148,10 +197,10 @@ export function drawBackDraft(backBodice, frontBodice, bodiceGuide) {
   backBodice.points.I.labelDir = "NE";
 
   // 29 C to I - but better
-  backBodice.curves.CI = utilities.getLine(backBodice.points.C, backBodice.points.I, utilities.GUIDE_LINE);
+  backBodice.curves.CI = utilities.getLine(backBodice.points.C, backBodice.points.I, constants.GUIDE_LINE);
 
   // 33 J to N
-  backBodice.curves.JN = utilities.getLine(backBodice.points.J, backBodice.points.N, utilities.GUIDE_LINE);
+  backBodice.curves.JN = utilities.getLine(backBodice.points.J, backBodice.points.N, constants.GUIDE_LINE);
 
   // 34 J to S
   let shoulderDartLength = 3 + 1/2;
@@ -216,7 +265,7 @@ export function drawBackDraft(backBodice, frontBodice, bodiceGuide) {
   backBodice.curves["E'L'"] = utilities.getLine(backBodice.points["E'"], backBodice.points["L'"])
 
   // 47 O to L
-  backBodice.curves.OL = utilities.getLine(backBodice.points.O, backBodice.points.L, utilities.GUIDE_LINE);
+  backBodice.curves.OL = utilities.getLine(backBodice.points.O, backBodice.points.L, constants.GUIDE_LINE);
 
   // 48 O to M
   backBodice.points.M = utilities.getPointAlongLine(backBodice.points.O, backBodice.points.L, backBodice.points.O.distTo(backBodice.points.L)/3);
@@ -277,12 +326,12 @@ export function drawFrontDraft(backBodice, frontBodice, isMasculine) {
   // 10 A to B
   let frontNeck = 2 + 3/4;
   frontBodice.points.B = frontBodice.points.A.squareRight(-frontNeck);
-  frontBodice.curves.AB = utilities.getLine(frontBodice.points.A, frontBodice.points.B, utilities.GUIDE_LINE);
+  frontBodice.curves.AB = utilities.getLine(frontBodice.points.A, frontBodice.points.B, constants.GUIDE_LINE);
 
   // 11 B to C
   let frontNeckVert = frontNeck + 1/4;
   frontBodice.points.C = frontBodice.points.B.squareUp(frontNeck);
-  frontBodice.curves.BC = utilities.getLine(frontBodice.points.B, frontBodice.points.C, utilities.GUIDE_LINE);
+  frontBodice.curves.BC = utilities.getLine(frontBodice.points.B, frontBodice.points.C, constants.GUIDE_LINE);
 
   // 12 B to D
   frontBodice.points.D = utilities.getPointAlongLine(frontBodice.points.B, frontBodice.points.C, frontNeckVert/2);
@@ -290,19 +339,19 @@ export function drawFrontDraft(backBodice, frontBodice, isMasculine) {
   // 13 D to E
   let frontShoulderGuide = (isMasculine) ? 7 : 6;
   frontBodice.points.E = frontBodice.points.D.squareRight(- frontShoulderGuide);
-  frontBodice.curves.DE = utilities.getLine(frontBodice.points.D, frontBodice.points.E, utilities.GUIDE_LINE);
+  frontBodice.curves.DE = utilities.getLine(frontBodice.points.D, frontBodice.points.E, constants.GUIDE_LINE);
 
   // 14 B to B'
   let neckGuideLength = 5/8;
   frontBodice.points["B'"] = frontBodice.points.B.toAngleDistance(Math.PI/4, neckGuideLength);
-  frontBodice.curves["BB'"] = utilities.getLine(frontBodice.points.B, frontBodice.points["B'"], utilities.GUIDE_LINE);
+  frontBodice.curves["BB'"] = utilities.getLine(frontBodice.points.B, frontBodice.points["B'"], constants.GUIDE_LINE);
 
   // 15 C to A
   let necklineInnerGuidePoint = utilities.getPointAlongLine(frontBodice.points["B'"], frontBodice.points.B, -0.75);
   frontBodice.curves["CA"] = utilities.getEulerParallelEnd(frontBodice.points.C, frontBodice.points.A, frontBodice.points.B, {outsidePoint: frontBodice.points["B'"], insidePoint: necklineInnerGuidePoint});
 
   // 16 C to E
-  frontBodice.curves.CE = utilities.getLine(frontBodice.points.C, frontBodice.points.E, utilities.GUIDE_LINE);
+  frontBodice.curves.CE = utilities.getLine(frontBodice.points.C, frontBodice.points.E, constants.GUIDE_LINE);
 
   // 17 C to F
   let shoulder = 5 + 1/2;
@@ -339,16 +388,16 @@ export function drawFrontDraft(backBodice, frontBodice, isMasculine) {
 
   // 24 K up
   let bustWidthCrossBackGuidPoint = frontBodice.points.K.squareUp(frontBodice.points.J.distTo(frontBodice.points.G));
-  frontBodice.curves.BustVline = utilities.getLine(frontBodice.points.K, bustWidthCrossBackGuidPoint, utilities.GUIDE_LINE);
+  frontBodice.curves.BustVline = utilities.getLine(frontBodice.points.K, bustWidthCrossBackGuidPoint, constants.GUIDE_LINE);
 
   // 25 A to L
   let figureLength = 8 + 1/2;
   frontBodice.points.L = utilities.getPointAlongLineDistanceFromPoint([frontBodice.points.K, bustWidthCrossBackGuidPoint], frontBodice.points.A, figureLength);
-  frontBodice.curves.AL = utilities.getLine(frontBodice.points.A, frontBodice.points.L, utilities.GUIDE_LINE);
+  frontBodice.curves.AL = utilities.getLine(frontBodice.points.A, frontBodice.points.L, constants.GUIDE_LINE);
 
   // 26 L to R'
   frontBodice.points["R'"] = utilities.getPointOnLineClosestToPoint([frontBodice.points.A, frontBodice.points.W], frontBodice.points.L);
-  frontBodice.curves["LR'"] = utilities.getLine(frontBodice.points.L, frontBodice.points["R'"], utilities.GUIDE_LINE);
+  frontBodice.curves["LR'"] = utilities.getLine(frontBodice.points.L, frontBodice.points["R'"], constants.GUIDE_LINE);
 
   // 27 L to K'
   frontBodice.curves["LK'"] = utilities.getEulerParallelStart(frontBodice.points["K'"], frontBodice.points.L, frontBodice.points["K'"].squareUp(1));
@@ -358,18 +407,18 @@ export function drawFrontDraft(backBodice, frontBodice, isMasculine) {
 
   // 29 F to L
   if (!isMasculine) {
-    frontBodice.curves.FL = utilities.getLine(frontBodice.points.F, frontBodice.points.L, utilities.GUIDE_LINE);
+    frontBodice.curves.FL = utilities.getLine(frontBodice.points.F, frontBodice.points.L, constants.GUIDE_LINE);
   }
 
   // 30 F' to L
   if (!isMasculine) {
-    frontBodice.curves["F'L"] = utilities.getLine(frontBodice.points["F'"], frontBodice.points.L, utilities.GUIDE_LINE);
+    frontBodice.curves["F'L"] = utilities.getLine(frontBodice.points["F'"], frontBodice.points.L, constants.GUIDE_LINE);
   }
 
   // 31 K to N
   let waistDartLength = 3 + 1/2;
   frontBodice.points.N = frontBodice.points.K.squareUp(- waistDartLength);
-  frontBodice.curves.KN = utilities.getLine(frontBodice.points.K, frontBodice.points.N, utilities.GUIDE_LINE);
+  frontBodice.curves.KN = utilities.getLine(frontBodice.points.K, frontBodice.points.N, constants.GUIDE_LINE);
 
   // 32 K' to N
   frontBodice.curves["K'N"] = utilities.getLine(frontBodice.points["K'"], frontBodice.points.N);
@@ -423,24 +472,24 @@ export function drawFrontDraft(backBodice, frontBodice, isMasculine) {
     let sideLevelPoint = utilities.getIntersection(frontBodice.points.L, bustWidthCrossBackGuidPoint, frontBodice.points.R, backBodice.points.E);
     bustWidthSLinePoint = sideLevelPoint.squareUp(sideLevelGuideOffset);
     sideLevelGuidePoint = bustWidthSLinePoint.squareRight(- bustPointToSideLevelPointDistance)
-    frontBodice.curves.sideLevelGuide = utilities.getLine(bustWidthSLinePoint, sideLevelGuidePoint, utilities.GUIDE_LINE);
+    frontBodice.curves.sideLevelGuide = utilities.getLine(bustWidthSLinePoint, sideLevelGuidePoint, constants.GUIDE_LINE);
   } else {
     bustWidthSLinePoint = utilities.getIntersection(frontBodice.points.L, bustWidthCrossBackGuidPoint, frontBodice.points.R, backBodice.points.E);
     sideLevelGuidePoint = bustWidthSLinePoint.squareRight(-1);
   }
 
   frontBodice.points.S = utilities.getPointAlongLineDistanceFromPoint([sideLevelGuidePoint, bustWidthSLinePoint], frontBodice.points.L, bustPointToSideLevelPointDistance);
-  frontBodice.curves.LS = utilities.getLine(frontBodice.points.L, frontBodice.points.S, utilities.GUIDE_LINE);
+  frontBodice.curves.LS = utilities.getLine(frontBodice.points.L, frontBodice.points.S, constants.GUIDE_LINE);
 
   // 39 S to O
   if (!isMasculine) {
-    frontBodice.curves.SO = utilities.getLine(frontBodice.points.S, frontBodice.points.O, utilities.GUIDE_LINE);
+    frontBodice.curves.SO = utilities.getLine(frontBodice.points.S, frontBodice.points.O, constants.GUIDE_LINE);
   }
 
   // 40 R' to S'
   if (!isMasculine) {
     frontBodice.points["S'"] = utilities.getIntersection(frontBodice.points.S, frontBodice.points.O, frontBodice.points["R'"], frontBodice.points["R'"].squareRight(1));
-    frontBodice.curves["LS'"] = utilities.getLine(frontBodice.points.L, frontBodice.points["S'"], utilities.GUIDE_LINE);
+    frontBodice.curves["LS'"] = utilities.getLine(frontBodice.points.L, frontBodice.points["S'"], constants.GUIDE_LINE);
   }
 
   // 41 S' to S''
@@ -451,7 +500,7 @@ export function drawFrontDraft(backBodice, frontBodice, isMasculine) {
 
   // 42 S'' to L
   if (!isMasculine) {
-    frontBodice.curves["S''L"] = utilities.getLine(frontBodice.points["S''"], frontBodice.points.L, utilities.GUIDE_LINE);
+    frontBodice.curves["S''L"] = utilities.getLine(frontBodice.points["S''"], frontBodice.points.L, constants.GUIDE_LINE);
   }
 
   // 43 G to I
@@ -468,15 +517,15 @@ export function drawFrontDraft(backBodice, frontBodice, isMasculine) {
 
   // 44 I to U
   frontBodice.points.U = utilities.getIntersection(frontBodice.points.I, frontBodice.points.I.squareUp(1), frontBodice.points.S, bustWidthSLinePoint);
-  frontBodice.curves.IU = utilities.getLine(frontBodice.points.I, frontBodice.points.U, utilities.GUIDE_LINE);
+  frontBodice.curves.IU = utilities.getLine(frontBodice.points.I, frontBodice.points.U, constants.GUIDE_LINE);
 
   // 45 L to U
   if (frontBodice.points.L.y > frontBodice.points.S.y) {
-    frontBodice.curves.LU = utilities.getLine(frontBodice.points.L, frontBodice.points.U, utilities.GUIDE_LINE);
+    frontBodice.curves.LU = utilities.getLine(frontBodice.points.L, frontBodice.points.U, constants.GUIDE_LINE);
   }
 
   // 46 E' to I to S
-  frontBodice.curves["E'S_guide"] = utilities.getEulerMidpoint(frontBodice.points["E'"], frontBodice.points.I, frontBodice.points.S, {curveStyle: utilities.GUIDE_LINE});
+  frontBodice.curves["E'S_guide"] = utilities.getEulerMidpoint(frontBodice.points["E'"], frontBodice.points.I, frontBodice.points.S, {curveStyle: constants.GUIDE_LINE});
 
   // 47 U to T
   if (frontBodice.points.L.y > frontBodice.points.S.y) {
@@ -486,4 +535,35 @@ export function drawFrontDraft(backBodice, frontBodice, isMasculine) {
 
   // 48 T to T'
   // TODO: utilities.get point a distance along a curve
+}
+
+export function create() {
+  let pattern = new Pattern();
+
+  pattern.patternPieces.guide = new PatternPiece();
+  pattern.patternPieces.back = new PatternPiece();
+  pattern.patternPieces.front = new PatternPiece({
+    labelColor: "#900",
+    labelDefaultDir: "E",
+  });
+
+  // let backBodice = {
+  //   points: {},
+  //   curves: {},
+  // };
+  // let bodiceGuide = {
+  //   curves: {},
+  // };
+  // let frontBodice = {
+  //   points: {},
+  //   curves: {},
+  //   labelColor: "#900",
+  //   labelDefaultDir: "E",
+  // };
+  setupGuide(pattern);
+  drawBackDraft(pattern);
+  // // console.log(performance.now() - start);
+  // drawFrontDraft(backBodice, frontBodice, false);
+
+  return pattern;
 }

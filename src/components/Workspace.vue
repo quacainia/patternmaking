@@ -7,8 +7,9 @@
 <script type="text/javascript">
 import { mapGetters, mapMutations } from 'vuex';
 
-import {drawBackDraft, drawFrontDraft, setupGuide} from '@/shared/moulage/bodice.js';
-import {draw, GRID_SIZE, WORKSPACE_HEIGHT, WORKSPACE_WIDTH} from '@/shared/moulage/utilities.js';
+import {GRID_SIZE, WORKSPACE_HEIGHT, WORKSPACE_WIDTH} from '@/shared/moulage/constants.js';
+import {create} from '@/shared/moulage/patterns/bodice.js';
+import {draw} from '@/shared/moulage/utilities.js';
 
 export default {
   name: 'Workspace',
@@ -69,32 +70,14 @@ export default {
     // let start = performance.now();
     this.resizeCanvas();
 
-    let backBodice = {
-      points: {},
-      curves: {},
-    };
-    let bodiceGuide = {
-      curves: {},
-    };
-    let frontBodice = {
-      points: {},
-      curves: {},
-      labelColor: "#900",
-      labelDefaultDir: "E",
-    };
-
-
-    setupGuide(bodiceGuide);
-    drawBackDraft(backBodice, frontBodice, bodiceGuide);
-    // console.log(performance.now() - start);
-    drawFrontDraft(backBodice, frontBodice, false);
+    let pattern = create();
     // console.log('front', performance.now() - start);
-    draw(this.$refs.canvas, this.getCanvas, bodiceGuide, backBodice, frontBodice);
+    draw(this.$refs.canvas, this.getCanvas, pattern.patternPieces.guide, pattern.patternPieces.back, pattern.patternPieces.front);
     // console.log('draw', performance.now() - start);
 
-    this.backBodice = backBodice;
-    this.bodiceGuide = bodiceGuide;
-    this.frontBodice = frontBodice;
+    this.backBodice = pattern.patternPieces.back;
+    this.bodiceGuide = pattern.patternPieces.guide;
+    this.frontBodice = pattern.patternPieces.front;
   },
 
   unmounted() {
