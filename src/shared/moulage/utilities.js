@@ -39,6 +39,7 @@ export function drawCurves(context, pattern) {
       context.beginPath();
       context.lineWidth = curveStyle.lineWidth || 3;
       context.strokeStyle = curveStyle.color || "#000";
+      context.setLineDash((curveStyle.dashed) ? [5, 5] : []);
       curve.points.forEach(point => context.lineTo(...point.canvas()));
       context.stroke();
     } else {
@@ -389,6 +390,10 @@ export function getEulerParallelStart(startPoint, endPoint, parallelStartPoint) 
     }
 
     if (lastPoint.distTo(endPoint) < 1/32) {
+      let points = curve.points.slice();
+      points.pop();
+      points.push(endPoint);
+      curve = new Curve(Object.assign({}, curve, {points}));
       break;
     }
 
@@ -560,11 +565,16 @@ export function getEulerMidpoint(startPoint, midPoint, endPoint, options) {
       continue;
     }
   }
+  let points = curve.points.slice();
+  points.pop();
+  points.push(endPoint);
+  points[0] = startPoint;
+  curve = new Curve(Object.assign({}, curve, {points}));
 
   return curve;
 }
 
-export function getEulerPerpendicularWithPointInside(endPoint, insidePoints, startLine, options) {
+export function getEulerPerpendicularWithPointInside(endPoint, insidePoints, startLine, canvasDimensions, options) {
   let {isLeftHanded, maxInsidePointDist} = Object.assign(
     {},
     {
@@ -573,9 +583,9 @@ export function getEulerPerpendicularWithPointInside(endPoint, insidePoints, sta
     options
   );
   let curve, dist, iter=0, scale, t0 = 0;
-  let initialAngle = endPoint.angleToLine(startLine);
+  let initialAngle = endPoint.angleToLine(startLine, canvasDimensions);
 
-  dist = endPoint.distToLine(startLine);
+  dist = endPoint.distToLine(startLine, canvasDimensions);
   scale = chooseEulerSize(dist);
   if (isLeftHanded === undefined) {
     isLeftHanded = chooseEulerLeftHanded(insidePoints[0], endPoint, {initialAngle});
@@ -626,6 +636,10 @@ export function getEulerPerpendicularWithPointInside(endPoint, insidePoints, sta
     }
     if (pointsAreInsideCurve) {
       if (minInsidePointsDist < maxInsidePointDist) {
+        let points = curve.points.slice();
+        points.pop();
+        points.push(endPoint);
+        curve = new Curve(Object.assign({}, curve, {points}));
         break;
       } else {
         t0 = t0 - (0.5**i);
@@ -702,6 +716,11 @@ export function getEulerOfMeasurementWithInsidePoint(startPoint, insidePoint, en
 
     let {isPointInCurve} = getPointInsideCurve(curve.points, insidePoint)
     if (isPointInCurve && Math.abs(curve.curveLength - measurement) < 1/16) {
+      let points = curve.points.slice();
+      points.pop();
+      points.push(endPoint);
+      points[0] = startPoint;
+      curve = new Curve(Object.assign({}, curve, {points}));
       break;
     } else if (curve.curveLength < measurement) {
       t0 = t0 + (t0Delta);
@@ -784,7 +803,7 @@ export function getPointAlongLine(point1, point2, distance, options) {
   return point1.addv(u.mult(distance), options);
 }
 
-export function getPointOnLineClosestToPoint(line, point) {
+export function getPointOnLineClosestToPoint(line, point, canvasDimensions) {
   /*
   If you have a line and a point that does not lie on the line, this export function
   will get the point that lies along the line that is closest to the point.
@@ -795,7 +814,7 @@ export function getPointOnLineClosestToPoint(line, point) {
   let perpendicularLineAngle = line[0].getAngle(line[1]);
   let perpendicularPoint = point.toAngleDistance(
     perpendicularLineAngle + Math.PI/2, 1);
-  return getIntersection(point, perpendicularPoint, line[0], line[1]);
+  return getIntersection(point, perpendicularPoint, line[0], line[1], canvasDimensions);
 }
 
 export function getPointAlongLineDistanceFromPoint(line, point, distance) {
@@ -824,7 +843,7 @@ export function getPointAlongLineDistanceFromPoint(line, point, distance) {
   return solution2;
 }
 
-export function getIntersection(line1Point1, line1Point2, line2Point1, line2Point2, canvas) {
+export function getIntersection(line1Point1, line1Point2, line2Point1, line2Point2, canvasDimensions, options) {
 
   let x1 = line1Point1.values[0];
   let y1 = line1Point1.values[1];
@@ -839,15 +858,15 @@ export function getIntersection(line1Point1, line1Point2, line2Point1, line2Poin
   let D = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
   let Px = ((x1*y2 - y1*x2)*(x3 - x4) - (x1 - x2)*(x3*y4 - y3*x4))/D;
   let Py = ((x1*y2 - y1*x2)*(y3 - y4) - (y1 - y2)*(x3*y4 - y3*x4))/D;
-  if (Math.abs(Px) === Infinity || Math.abs(Py) === Infinity || isNaN(Px) || isNaN(Py) || Px > canvas.x.max || Px < canvas.x.min || Py > canvas.y.max || Py < canvas.y.min) {
+  if (Math.abs(Px) === Infinity || Math.abs(Py) === Infinity || isNaN(Px) || isNaN(Py) || Px > canvasDimensions.x.max || Px < canvasDimensions.x.min || Py > canvasDimensions.y.max || Py < canvasDimensions.y.min) {
     // TODO: Handle these errors better
     console.error("Intersection error:", {Px, Py});
     return null
   }
-  return new Point([Px, Py]);
+  return new Point([Px, Py], options);
 }
 
-export function mitreDart(dartPoint, foldToPoint, dartLegFoldToSide, dartLegFoldAwaySide) {
+export function mitreDart(dartPoint, foldToPoint, dartLegFoldToSide, dartLegFoldAwaySide, canvasDimensions, options) {
 
   let dartAngle, dartMidPoint, foldToPointRotated, mitredMidPoint;
 
@@ -857,7 +876,7 @@ export function mitreDart(dartPoint, foldToPoint, dartLegFoldToSide, dartLegFold
 
   dartMidPoint = getPointAlongLine(dartLegFoldToSide, dartLegFoldAwaySide, dartLegFoldToSide.distTo(dartLegFoldAwaySide)/2);
 
-  mitredMidPoint = getIntersection(dartPoint, dartMidPoint, dartLegFoldAwaySide, foldToPointRotated);
+  mitredMidPoint = getIntersection(dartPoint, dartMidPoint, dartLegFoldAwaySide, foldToPointRotated, canvasDimensions, options);
 
   return mitredMidPoint;
 }

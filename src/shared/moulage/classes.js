@@ -9,26 +9,33 @@ export class Pattern {
 
   addStep(step) {
     // TODO: Validate step
+    if (!step.patternPieceName) {
+      console.error('Pattern step needs an associated pattern piece name.', step);
+      throw 'Pattern step needs an associated pattern piece name.';
+      // TODO: Handle gracefully.
+    }
+
     let {actions, patternPieceName} = step;
     let patternPieces = this.patternPieces;
-    let patternPiece = this.patternPieces[patternPieceName];
     let stepId = this.steps.length;
 
     this.steps.push(step);
 
     actions.forEach(action => {
       if (!action.name) {
-        console.error('Pattern step action does not have a name.', step);
+        console.error('Pattern step action does not have a name.', step, action);
         throw 'Pattern step action does not have a name.';
         // TODO: Handle gracefully.
       }
+
       action.stepId = stepId;
 
-      let actionPatternPiece = patternPiece;
+      action.patternPieceName = patternPieceName;
 
       if (action.options && action.options.patternPieceName) {
-        actionPatternPiece = patternPieces[action.options.patternPieceName];
+        action.patternPieceName = action.options.patternPieceName;
       }
+      let actionPatternPiece = patternPieces[action.patternPieceName];
 
       if (action.type === 'point') {
         actionPatternPiece.points[action.name] = action;
@@ -61,6 +68,7 @@ export class Point {
     this.options = options;
     this.name = options && options.name;
     this.isGuide = options && options.isGuide;
+    this.labelDir = options && options.labelDir;
   }
 
   *canvas() {
@@ -92,8 +100,8 @@ export class Point {
     return this.addv(pixelsToGridVector(values));
   }
 
-  angleToLine(line) {
-    return getPointOnLineClosestToPoint(line, this).getAngle(this);
+  angleToLine(line, canvasDimensions) {
+    return getPointOnLineClosestToPoint(line, this, canvasDimensions).getAngle(this);
   }
 
   canvasX() {
@@ -109,8 +117,8 @@ export class Point {
     return Math.sqrt(p.values[0]**2 + p.values[1]**2);
   }
 
-  distToLine(line) {
-    let pointOnLine = getPointOnLineClosestToPoint(line, this);
+  distToLine(line, canvasDimensions) {
+    let pointOnLine = getPointOnLineClosestToPoint(line, this, canvasDimensions);
     return this.distTo(pointOnLine);
   }
 
@@ -185,7 +193,17 @@ export class Curve {
 
     this.curveLength = values.curveLength || null;
 
-    let curveStyle = (this.options.isGuide) ? {color: "#555", lineWidth: 1} : {};
+    let curveStyle = {};
+    switch(this.options.styleName) {
+      case 'guide':
+        curveStyle = {color: "#555", lineWidth: 1};
+        break;
+      case 'temporary':
+        curveStyle = {color: "#555", lineWidth: 1, dashed: true};
+        break;
+      default:
+        break;
+    }
     this.curveStyle = Object.assign(curveStyle, this.options.curveStyle || values.curveStyle);
 
     this.endDistance = this.options.endDistance || null;
@@ -194,7 +212,11 @@ export class Curve {
     this.isLeftHanded = this.options.isLeftHanded || false;
     this.midPoint = values.midPoint;
     this.mutations = values.mutations || [];
+
     this.name = values.name || this.options.name;
+    if (!this.name && this.points.length > 1 && this.points[0].name && this.points[this.points.length-1].name) {
+      this.name = "" + this.points[0].name + this.points[this.points.length-1].name;
+    }
 
     if (values.rotationAngle !== undefined) {
       this.rotationAngle = values.rotationAngle;

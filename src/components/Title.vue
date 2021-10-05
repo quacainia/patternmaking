@@ -16,25 +16,25 @@
         <tr>
           <td></td>
           <td>
-            <button @click="pan(0, 60)">^</button>
+            <button @click="pan(0, -60)">^</button>
           </td>
           <td></td>
         </tr>
         <tr>
           <td>
-            <button @click="pan(-60, 0)">&lt;</button>
+            <button @click="pan(60, 0)">&lt;</button>
           </td>
           <td>
             <button @click="resetPan()">•</button>
           </td>
           <td>
-            <button @click="pan(60, 0)">&gt;</button>
+            <button @click="pan(-60, 0)">&gt;</button>
           </td>
         </tr>
         <tr>
           <td></td>
           <td>
-            <button @click="pan(0, -60)">v</button>
+            <button @click="pan(0, 60)">v</button>
           </td>
           <td></td>
         </tr>
