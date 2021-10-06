@@ -3,7 +3,7 @@ import * as constants from '@/shared/moulage/constants.js';
 import * as utilities from '@/shared/moulage/utilities.js';
 
 let backTop = new Point([1,1], {name: 'backTop', styleName: 'guide'});
-let backBottom = new Point([1,29], {name: 'backTop', styleName: 'guide'});
+let backBottom = new Point([1,29], {name: 'backBottom', styleName: 'guide'});
 let frontTop = new Point([29,1], {name: 'frontTop', styleName: 'guide'});
 let frontBottom = new Point([29,29], {name: 'frontBottom', styleName: 'guide'});
 
@@ -29,20 +29,21 @@ export function setupGuide(pattern) {
 
   pattern.addStep({
     actions: [
-      utilities.getLine(backTop, backBottom, {styleName: 'guide', name: 'centerBack'}),
       backBottom,
       backTop,
+      utilities.getLine(backTop, backBottom, {styleName: 'guide', name: 'centerBack'}),
     ],
     name: 'centerBack',
     patternPieceName: 'guide',
     instructions: 'Draw a vertical guide line 1" from the left side of the page, and at least 28" long.', // TODO: guide lines are currently arbitrary size
+    title: 'Draw center back guide line',
   });
 
   pattern.addStep({
     actions: [
-      utilities.getLine(frontTop, frontBottom, {styleName: 'guide', name: 'centerFront'}),
       frontBottom,
       frontTop,
+      utilities.getLine(frontTop, frontBottom, {styleName: 'guide', name: 'centerFront'}),
     ],
     name: 'centerFront',
     patternPieceName: 'guide',
@@ -132,7 +133,7 @@ export function drawBackDraft(pattern) {
   pattern.addStep({
     actions: [
       B,
-      utilities.getLine(B, back.points.A, {styleName: 'guide'}),
+      utilities.getLine(back.points.A, B, {styleName: 'guide'}),
     ],
     patternPieceName: 'back',
   });
@@ -716,7 +717,11 @@ export function drawFrontDraft(backBodice, frontBodice, isMasculine) {
 }
 
 export function create() {
-  let pattern = new Pattern();
+  let pattern = new Pattern({
+    name:'moulage',
+    title: 'Moulage',
+    description: 'Making a moulage.',
+  });
 
   pattern.patternPieces.guide = new PatternPiece();
   pattern.patternPieces.back = new PatternPiece();

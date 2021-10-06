@@ -2,7 +2,11 @@ import {GRID_SIZE} from './constants.js';
 import {getPointOnLineClosestToPoint, pixelsToGridVector} from './utilities.js';
 
 export class Pattern {
-  constructor() {
+  constructor(values) {
+    values = values || {};
+    this.name = values.name;
+    this.title = values.title;
+    this.description = values.description;
     this.patternPieces = {}
     this.steps = [];
   }

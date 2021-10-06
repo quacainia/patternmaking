@@ -10,7 +10,7 @@
     </p>
 
     <p>
-      <router-link to="/measurements">Get started!</router-link>
+      <router-link to="/draft/moulage">Get started!</router-link>
     </p>
   </div>
 </template>

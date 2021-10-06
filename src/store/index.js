@@ -1,4 +1,6 @@
-import { createStore } from 'vuex'
+import { createStore } from 'vuex';
+
+import draftModule from '@/store/modules/draft.js';
 
 export default createStore({
   state: {
@@ -87,6 +89,7 @@ export default createStore({
   actions: {
   },
   modules: {
+    draft: draftModule,
   },
   getters: {
     canvas(state) {
