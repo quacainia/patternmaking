@@ -16,25 +16,25 @@
         <tr>
           <td></td>
           <td>
-            <button @click="pan(0, 60)">^</button>
+            <button @click="pan(0, -60)">^</button>
           </td>
           <td></td>
         </tr>
         <tr>
           <td>
-            <button @click="pan(-60, 0)">&lt;</button>
+            <button @click="pan(60, 0)">&lt;</button>
           </td>
           <td>
             <button @click="resetPan()">•</button>
           </td>
           <td>
-            <button @click="pan(60, 0)">&gt;</button>
+            <button @click="pan(-60, 0)">&gt;</button>
           </td>
         </tr>
         <tr>
           <td></td>
           <td>
-            <button @click="pan(0, -60)">v</button>
+            <button @click="pan(0, 60)">v</button>
           </td>
           <td></td>
         </tr>
@@ -46,7 +46,7 @@
 
 <script>
 import { mapGetters, mapMutations } from 'vuex';
-import {GRID_SIZE, WORKSPACE_HEIGHT, WORKSPACE_WIDTH} from '@/shared/moulage/utilities.js';
+import {GRID_SIZE, WORKSPACE_HEIGHT, WORKSPACE_WIDTH} from '@/shared/moulage/constants.js';
 
 export default {
   name: 'Title',

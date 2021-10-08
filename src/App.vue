@@ -67,6 +67,9 @@ a {
 p.warning {
   color:red;
 }
+h4.title{
+  margin: 0px;
+}
 h3.title{
   margin: 0px;
 }

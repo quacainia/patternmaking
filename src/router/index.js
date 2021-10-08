@@ -1,23 +1,34 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Demo from '../views/Demo.vue'
 import Home from '../views/Home.vue'
-import Measurements from '../views/Measurements.vue'
+import Draft from '../views/Draft.vue'
 
 const routes = [
   {
     path: '/',
     name: 'Home',
-    component: Home
+    component: Home,
   },
   {
-    path: '/measurements',
-    name: 'Measurements',
-    component: Measurements
+    path: '/draft/:draftId',
+    name: 'Draft',
+    component: Draft,
+  },
+  {
+    path: '/draft/:draftId/step/:stepId',
+    component: Draft,
+  },
+  {
+    path: '/draft/:draftId/complete',
+    component: Draft,
+    props: {
+      complete: true,
+    },
   },
   {
     path: '/demo',
     name: 'Demo',
-    component: Demo
+    component: Demo,
   },
 ]
 
