@@ -2,6 +2,8 @@
 
 This is a web based tool to assist with patternmaking in fashion design.
 
+© 2021 Ben Becker - All rights reserved
+
 ## Project setup
 ```
 yarn install
