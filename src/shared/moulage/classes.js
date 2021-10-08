@@ -108,6 +108,10 @@ export class Point {
     return getPointOnLineClosestToPoint(line, this, canvasDimensions).getAngle(this);
   }
 
+  approx(point2, distance=1/32) {
+    return Math.abs(this.x - point2.x) < distance && Math.abs(this.y - point2.y) < distance;
+  }
+
   canvasX() {
     return this.gridToCanvasCoordinates()[0];
   }
@@ -136,6 +140,10 @@ export class Point {
     ).reduce(
       (a,b) => a + b
     );
+  }
+
+  equal(point2) {
+    return this.x === point2.x && this.y === point2.y;
   }
 
   getAngle(point2) {

@@ -219,7 +219,7 @@ export function getEuler(options) {
       endDistance: null,
       endDistanceParallel: null,
       isLeftHanded: false,
-      maxPoints: 1000,
+      maxPoints: 2000,
       measureLength: false,
       rotationAngle: 0,
       scale: EULER_SCALE_STD,
@@ -241,7 +241,7 @@ export function getEuler(options) {
     t0,
     tReverse
   } = options
-  let dt = 0.002, t = t0, prevValue = {x: 0, y: 0}, prevDist,
+  let dt = 0.001, t = t0, prevValue = {x: 0, y: 0}, prevDist,
       eulerPointsList = [startPoint], currentDist, startAngle, N = maxPoints-1,
       curveLength = 0, flip = false, currentValue = prevValue, midPoint,
       compensationAngle;
@@ -485,6 +485,11 @@ export function getEulerParallelEnd(startPoint, endPoint, parallelEndPoint, opti
           continue;
         }
       }
+      let points = curve.points.slice();
+      points.pop();
+      points.push(endPoint);
+      points[0] = startPoint;
+      curve = new Curve(Object.assign({}, curve, {points}));
       break;
     }
 
@@ -506,9 +511,8 @@ export function getEulerParallelEnd(startPoint, endPoint, parallelEndPoint, opti
   return curve;
 }
 
-export function getEulerMidpoint(startPoint, midPoint, endPoint, options) {
+export function getEulerMidpoint(startPoint, midPoint, endPoint, curveOptions) {
   let curve, dist, endAngle, isLeftHanded, iter = 0, scale, t0 = 0;
-  let {curveStyle} = Object.assign({}, options);
 
   scale = chooseEulerSize(startPoint.distTo(endPoint));
   isLeftHanded = chooseEulerLeftHanded(startPoint, endPoint, {midPoint});
@@ -522,8 +526,8 @@ export function getEulerMidpoint(startPoint, midPoint, endPoint, options) {
       throw "drawEulerMidpoint: Too many iterations.";
     }
 
-    options = {
-      curveStyle,
+    let options = {
+      ...curveOptions,
       isLeftHanded,
       endDistance: dist,
       scale,
@@ -601,6 +605,7 @@ export function getEulerPerpendicularWithPointInside(endPoint, insidePoints, sta
     }
 
     options = {
+      ...options,
       isLeftHanded,
       endDistanceParallel: dist,
       rotationAngle: initialAngle,
@@ -658,7 +663,7 @@ export function getEulerPerpendicularWithPointInside(endPoint, insidePoints, sta
   return curve;
 }
 
-export function getEulerOfMeasurementWithInsidePoint(startPoint, insidePoint, endPoint, measurement) {
+export function getEulerOfMeasurementWithInsidePoint(startPoint, insidePoint, endPoint, measurement, curveOptions) {
   let curve, dist, endAngle, isLeftHanded, iter = 0, scale, t0 = 0, 
       t0Delta = 0.1, tReverse, options;
   const ITERATIONS = 5;
@@ -678,6 +683,7 @@ export function getEulerOfMeasurementWithInsidePoint(startPoint, insidePoint, en
     }
 
     options = {
+      ...curveOptions,
       isLeftHanded,
       endDistance: dist,
       measureLength: true,
@@ -739,7 +745,7 @@ export function getEulerOfMeasurementWithInsidePoint(startPoint, insidePoint, en
 }
 
 export function getFlippedEulerPerpendicularWithPointInside(
-    curve, endPoint, insidePoints, startLine, options) {
+    curve, endPoint, insidePoints, startLine, canvasDimensions, options) {
   let newCurve, originalCurve;
 
   let flippedCurve = curve.flip(0)
@@ -755,10 +761,14 @@ export function getFlippedEulerPerpendicularWithPointInside(
   }
 
   if (!pointsAreInsideCurve) {
-    newCurve = getEulerPerpendicularWithPointInside(endPoint, insidePoints, startLine, options);
+    newCurve = getEulerPerpendicularWithPointInside(endPoint, insidePoints, startLine, canvasDimensions, options);
 
     let unflippedCurve = newCurve.flip(0);
     originalCurve = unflippedCurve.move(curve.points[curve.points.length-1].subv(unflippedCurve.points[unflippedCurve.points.length - 1]));
+    let points = originalCurve.points.slice();
+    points.pop();
+    points.push(curve.points.slice().pop());
+    originalCurve = new Curve(Object.assign({}, originalCurve, {points}));
   } else {
     newCurve = movedCurve;
     originalCurve = curve;
@@ -803,7 +813,7 @@ export function getPointAlongLine(point1, point2, distance, options) {
   return point1.addv(u.mult(distance), options);
 }
 
-export function getPointOnLineClosestToPoint(line, point, canvasDimensions) {
+export function getPointOnLineClosestToPoint(line, point, canvasDimensions, options) {
   /*
   If you have a line and a point that does not lie on the line, this export function
   will get the point that lies along the line that is closest to the point.
@@ -814,10 +824,10 @@ export function getPointOnLineClosestToPoint(line, point, canvasDimensions) {
   let perpendicularLineAngle = line[0].getAngle(line[1]);
   let perpendicularPoint = point.toAngleDistance(
     perpendicularLineAngle + Math.PI/2, 1);
-  return getIntersection(point, perpendicularPoint, line[0], line[1], canvasDimensions);
+  return getIntersection(point, perpendicularPoint, line[0], line[1], canvasDimensions, options);
 }
 
-export function getPointAlongLineDistanceFromPoint(line, point, distance) {
+export function getPointAlongLineDistanceFromPoint(line, point, distance, canvasDimensions, options) {
   /*
   From point you want to draw a line of a specified distance where the
   terminating point lies along the line.
@@ -828,15 +838,15 @@ export function getPointAlongLineDistanceFromPoint(line, point, distance) {
 
   let solution1, solution2;
 
-  let normalPoint = getPointOnLineClosestToPoint(line, point);
+  let normalPoint = getPointOnLineClosestToPoint(line, point, canvasDimensions);
   let distanceFromPointToNormal = point.distTo(normalPoint);
   let distanceFromNormalAlongLine = Math.sqrt(distance**2 - distanceFromPointToNormal**2);
   if (isNaN(distanceFromNormalAlongLine)) {
     console.error("getPointAlongLineDistanceFromPoint: distance not close enough to line provides", line, point, distance, distanceFromPointToNormal);
     return null;
   }
-  solution1 = getPointAlongLine(normalPoint, line[0], distanceFromNormalAlongLine);
-  solution2 = getPointAlongLine(normalPoint, line[0], - distanceFromNormalAlongLine);
+  solution1 = getPointAlongLine(normalPoint, line[0], distanceFromNormalAlongLine, options);
+  solution2 = getPointAlongLine(normalPoint, line[0], - distanceFromNormalAlongLine, options);
   if (line[0].distTo(solution1) < line[0].distTo(solution2)) {
     return solution1;
   }

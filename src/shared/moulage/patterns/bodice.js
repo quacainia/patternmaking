@@ -1,5 +1,4 @@
 import {Curve, Pattern, PatternPiece, Point} from '@/shared/moulage/classes.js';
-import * as constants from '@/shared/moulage/constants.js';
 import * as utilities from '@/shared/moulage/utilities.js';
 
 let backTop = new Point([1,1], {name: 'backTop', styleName: 'guide'});
@@ -367,7 +366,7 @@ export function drawBackDraft(pattern) {
 
   // 44 O to Q'
   let OQ = utilities.getEulerPerpendicularWithPointInside(
-    back.points.O, [back.points.P, back.points.Q], [back.points.R, back.points.Q], pattern.dimensions, {isLeftHanded: true}
+    back.points.O, [back.points.P, back.points.Q], [back.points.R, back.points.Q], pattern.dimensions, {isLeftHanded: true, styleName: 'guide'}
   );
   let QPrime = OQ.points[0];
   QPrime.labelDir = "E";
@@ -376,7 +375,7 @@ export function drawBackDraft(pattern) {
   pattern.addStep({
     actions: [
       OQ, QPrime,
-      utilities.getLine(back.points.R, QPrime),
+      utilities.getLine(back.points.R, QPrime, {styleName: 'guide'}),
       // TODO: Wait until adjusted with the front
     ],
     patternPieceName: 'back',
@@ -460,7 +459,8 @@ export function drawBackDraft(pattern) {
         back.points["I''"],
         back.points["K'"],
         back.points["L'"],
-        armhole
+        armhole,
+        {styleName: 'guide'},
       ),
     ],
     patternPieceName: 'back',
@@ -492,222 +492,423 @@ export function drawBackDraft(pattern) {
   });
 }
 
-export function drawFrontDraft(backBodice, frontBodice, isMasculine) {
+export function drawFrontDraft(pattern) {
+  let front = pattern.patternPieces.front;
 
   // Beginning
-  frontBodice.curves.WJ = utilities.getLine(frontBodice.points.W, frontBodice.points.J);
+  pattern.addStep({
+    actions: [
+      utilities.getLine(front.points.W, front.points.J),
+    ],
+    patternPieceName: 'front',
+  });
 
   // 9 J to A
   let frontLength = 14 + 1/2;
-  frontBodice.points.A = frontBodice.points.J.squareUp(frontLength);
-  frontBodice.curves.JA = utilities.getLine(frontBodice.points.J, frontBodice.points.A);
+  let A = front.points.J.squareUp(frontLength, {name: 'A'});
+  pattern.addStep({
+    actions: [
+      A,
+      utilities.getLine(front.points.J, A),
+    ],
+    patternPieceName: 'front',
+  });
 
   // 10 A to B
   let frontNeck = 2 + 3/4;
-  frontBodice.points.B = frontBodice.points.A.squareRight(-frontNeck);
-  frontBodice.curves.AB = utilities.getLine(frontBodice.points.A, frontBodice.points.B, constants.GUIDE_LINE);
+  let B = front.points.A.squareRight(- frontNeck, {name: 'B'});
+  pattern.addStep({
+    actions: [
+      B,
+      utilities.getLine(front.points.A, B, {styleName: 'guide'}),
+    ],
+    patternPieceName: 'front',
+  });
 
   // 11 B to C
   let frontNeckVert = frontNeck + 1/4;
-  frontBodice.points.C = frontBodice.points.B.squareUp(frontNeck);
-  frontBodice.curves.BC = utilities.getLine(frontBodice.points.B, frontBodice.points.C, constants.GUIDE_LINE);
+  let C = front.points.B.squareUp(frontNeckVert, {name: 'C'});
+  pattern.addStep({
+    actions: [
+      C,
+      utilities.getLine(front.points.B, C, {styleName: 'guide'}),
+    ],
+    patternPieceName: 'front',
+  });
 
   // 12 B to D
-  frontBodice.points.D = utilities.getPointAlongLine(frontBodice.points.B, frontBodice.points.C, frontNeckVert/2);
+  pattern.addStep({
+    actions: [
+      utilities.getPointAlongLine(front.points.B, front.points.C, frontNeckVert/2, {name: 'D'}),
+    ],
+    patternPieceName: 'front',
+  });
 
   // 13 D to E
-  let frontShoulderGuide = (isMasculine) ? 7 : 6;
-  frontBodice.points.E = frontBodice.points.D.squareRight(- frontShoulderGuide);
-  frontBodice.curves.DE = utilities.getLine(frontBodice.points.D, frontBodice.points.E, constants.GUIDE_LINE);
+  let frontShoulderGuide = (pattern.isMasculine) ? 7 : 6;
+  let E = front.points.D.squareRight(- frontShoulderGuide, {name: 'E'});
+  pattern.addStep({
+    actions: [
+      E,
+      utilities.getLine(front.points.D, E, {styleName: 'guide'}),
+    ],
+    patternPieceName: 'front',
+  });
 
   // 14 B to B'
   let neckGuideLength = 5/8;
-  frontBodice.points["B'"] = frontBodice.points.B.toAngleDistance(Math.PI/4, neckGuideLength);
-  frontBodice.curves["BB'"] = utilities.getLine(frontBodice.points.B, frontBodice.points["B'"], constants.GUIDE_LINE);
+  let BPrime = front.points.B.toAngleDistance(Math.PI/4, neckGuideLength, {name: "B'"});
+  pattern.addStep({
+    actions: [
+      BPrime,
+      utilities.getLine(front.points.B, BPrime, {styleName: 'guide'}),
+    ],
+    patternPieceName: 'front',
+  });
 
   // 15 C to A
-  let necklineInnerGuidePoint = utilities.getPointAlongLine(frontBodice.points["B'"], frontBodice.points.B, -0.75);
-  frontBodice.curves["CA"] = utilities.getEulerParallelEnd(frontBodice.points.C, frontBodice.points.A, frontBodice.points.B, {outsidePoint: frontBodice.points["B'"], insidePoint: necklineInnerGuidePoint});
+  let BDoublePrime = utilities.getPointAlongLine(front.points["B'"], front.points.B, -0.75, {name: "B''"});
+  pattern.addStep({
+    actions: [
+      BDoublePrime,
+      utilities.getEulerParallelEnd(front.points.C, front.points.A, front.points.B, {outsidePoint: front.points["B'"], insidePoint: BDoublePrime}),
+    ],
+    patternPieceName: 'front',
+  });
 
   // 16 C to E
-  frontBodice.curves.CE = utilities.getLine(frontBodice.points.C, frontBodice.points.E, constants.GUIDE_LINE);
+  pattern.addStep({
+    actions: [
+      utilities.getLine(front.points.C, front.points.E, {styleName: 'guide'}),
+    ],
+    patternPieceName: 'front',
+  });
 
   // 17 C to F
   let shoulder = 5 + 1/2;
-  frontBodice.points.F = utilities.getPointAlongLine(frontBodice.points.C, frontBodice.points.E, shoulder/2);
+  pattern.addStep({
+    actions: [
+      utilities.getPointAlongLine(front.points.C, front.points.E, shoulder/2, {name: 'F'}),
+    ],
+    patternPieceName: 'front',
+  });
 
   // 18 F to F'
-  let shoulderDartWidth = (isMasculine) ? 0 : 1/2;
-  frontBodice.points["F'"] = utilities.getPointAlongLine(frontBodice.points.F, frontBodice.points.E, shoulderDartWidth);
-  frontBodice.points["F'"].labelDir = "W";
-  if (isMasculine) {
-    // TODO: do not draw points with this tag
-    frontBodice.points["F'"].doNotDraw = true;
-  }
+  let shoulderDartWidth = (pattern.isMasculine) ? 0 : 1/2;
+  let FPrime = utilities.getPointAlongLine(front.points.F, front.points.E, shoulderDartWidth, {name: "F'", labelDir: 'W', doNotDraw: pattern.isMasculine});
+  pattern.addStep({
+    actions: [
+      FPrime,
+    ],
+    patternPieceName: 'front',
+  });
 
   // 19 F' to E'
-  frontBodice.points["E'"] = utilities.getPointAlongLine(frontBodice.points["F'"], frontBodice.points.E, shoulder/2);
+  pattern.addStep({
+    actions: [
+      utilities.getPointAlongLine(front.points["F'"], front.points.E, shoulder/2, {name: "E'"}),
+    ],
+    patternPieceName: 'front',
+  });
 
   // 20 J to K
   let figureWidthCalc = 4 + 3/8;
-  frontBodice.points.K = frontBodice.points.J.squareRight(- figureWidthCalc);
-  frontBodice.points.K.labelDir = "N";
+  pattern.addStep({
+    actions: [
+      front.points.J.squareRight(- figureWidthCalc, {name: 'K', labelDir: 'N'}),
+    ],
+    patternPieceName: 'front',
+  });
 
   // 21 K to K''
-  let waistDartWidth = 1/2;
-  frontBodice.points["K''"] = frontBodice.points.K.squareRight(waistDartWidth / 2);
-
   // 22 K' to K''
-  frontBodice.points["K'"] = frontBodice.points.K.squareRight(- waistDartWidth / 2);
-  frontBodice.points["K'"].labelDir = "W";
+  let waistDartWidth = 1/2;
+  pattern.addStep({
+    actions: [
+      front.points.K.squareRight(waistDartWidth / 2, {name: "K''"}),
+      front.points.K.squareRight(- waistDartWidth / 2, {name: "K'", labelDir: 'W'}),
+    ],
+    patternPieceName: 'front',
+  });
 
   // 23 J to O
   let waistFront = 8 + 3/4;
-  frontBodice.points.O = frontBodice.points.J.squareRight(- (waistFront + waistDartWidth));
+  pattern.addStep({
+    actions: [
+      front.points.J.squareRight(- (waistFront + waistDartWidth), {name: 'O'}),
+    ],
+    patternPieceName: 'front',
+  });
 
   // 24 K up
-  let bustWidthCrossBackGuidPoint = frontBodice.points.K.squareUp(frontBodice.points.J.distTo(frontBodice.points.G));
-  frontBodice.curves.BustVline = utilities.getLine(frontBodice.points.K, bustWidthCrossBackGuidPoint, constants.GUIDE_LINE);
+  let LPrime = front.points.K.squareUp(front.points.J.distTo(front.points.G), {name: "L'"});
+  pattern.addStep({
+    actions: [
+      LPrime,
+      utilities.getLine(front.points.K, LPrime, {styleName: 'guide'}),
+    ],
+    patternPieceName: 'front',
+  });
 
   // 25 A to L
   let figureLength = 8 + 1/2;
-  frontBodice.points.L = utilities.getPointAlongLineDistanceFromPoint([frontBodice.points.K, bustWidthCrossBackGuidPoint], frontBodice.points.A, figureLength);
-  frontBodice.curves.AL = utilities.getLine(frontBodice.points.A, frontBodice.points.L, constants.GUIDE_LINE);
+  let L = utilities.getPointAlongLineDistanceFromPoint([front.points.K, front.points["L'"]], front.points.A, figureLength, pattern.dimensions, {name: 'L'});
+  pattern.addStep({
+    actions: [
+      L,
+      utilities.getLine(front.points.A, L, {styleName: 'guide'}),
+    ],
+    patternPieceName: 'front',
+  });
 
   // 26 L to R'
-  frontBodice.points["R'"] = utilities.getPointOnLineClosestToPoint([frontBodice.points.A, frontBodice.points.W], frontBodice.points.L);
-  frontBodice.curves["LR'"] = utilities.getLine(frontBodice.points.L, frontBodice.points["R'"], constants.GUIDE_LINE);
+  let RPrime = utilities.getPointOnLineClosestToPoint([front.points.A, front.points.W], front.points.L, pattern.dimensions, {name: "R'"});
+  pattern.addStep({
+    actions: [
+      RPrime,
+      utilities.getLine(front.points.L, RPrime, {styleName: 'guide'}),
+    ],
+    patternPieceName: 'front',
+  });
 
   // 27 L to K'
-  frontBodice.curves["LK'"] = utilities.getEulerParallelStart(frontBodice.points["K'"], frontBodice.points.L, frontBodice.points["K'"].squareUp(1));
+  pattern.addStep({
+    actions: [
+      utilities.getEulerParallelStart(front.points["K'"], front.points.L, front.points["K'"].squareUp(1)),
+    ],
+    patternPieceName: 'front',
+  });
 
   // 28 L to K';
-  frontBodice.curves["K'K''"] = utilities.getEulerParallelStart(frontBodice.points["K''"], frontBodice.points.L, frontBodice.points["K''"].squareUp(1));
+  pattern.addStep({
+    actions: [
+      utilities.getEulerParallelStart(front.points["K''"], front.points.L, front.points["K''"].squareUp(1)),
+    ],
+    patternPieceName: 'front',
+  });
 
   // 29 F to L
-  if (!isMasculine) {
-    frontBodice.curves.FL = utilities.getLine(frontBodice.points.F, frontBodice.points.L, constants.GUIDE_LINE);
-  }
-
   // 30 F' to L
-  if (!isMasculine) {
-    frontBodice.curves["F'L"] = utilities.getLine(frontBodice.points["F'"], frontBodice.points.L, constants.GUIDE_LINE);
+  if (!pattern.isMasculine) {
+    pattern.addStep({
+      actions: [
+        utilities.getLine(front.points.F, front.points.L, {styleName: 'guide'}),
+        utilities.getLine(front.points["F'"], front.points.L, {styleName: 'guide'}),
+      ],
+      patternPieceName: 'front',
+    });
   }
 
   // 31 K to N
   let waistDartLength = 3 + 1/2;
-  frontBodice.points.N = frontBodice.points.K.squareUp(- waistDartLength);
-  frontBodice.curves.KN = utilities.getLine(frontBodice.points.K, frontBodice.points.N, constants.GUIDE_LINE);
+  let N = front.points.K.squareUp(- waistDartLength, {name: 'N'});
+  pattern.addStep({
+    actions: [
+      N,
+      utilities.getLine(front.points.K, N, {styleName: 'guide'}),
+    ],
+    patternPieceName: 'front',
+  });
 
   // 32 K' to N
-  frontBodice.curves["K'N"] = utilities.getLine(frontBodice.points["K'"], frontBodice.points.N);
-
   // 33 K'' to N
-  frontBodice.curves["K''N"] = utilities.getLine(frontBodice.points["K''"], frontBodice.points.N);
+  pattern.addStep({
+    actions: [
+      utilities.getLine(front.points["K'"], front.points.N),
+      utilities.getLine(front.points["K''"], front.points.N),
+    ],
+    patternPieceName: 'front',
+  });
 
   // 34 Y to P
   let halfHip = 8 + 3/4;
   let halfHipDartGap = 0;
-  if (frontBodice.points.N.y > frontBodice.points.Y.y) {
-    let pointPPrime = utilities.getIntersection(frontBodice.points["K'"], frontBodice.points.N, backBodice.points.G, frontBodice.points.Y);
-    let pointPDoublePrime = utilities.getIntersection(frontBodice.points["K''"], frontBodice.points.N, backBodice.points.G, frontBodice.points.Y);
-    halfHipDartGap = pointPPrime.distTo(pointPDoublePrime)
+  let YtoPInitialActions = [];
+  if (front.points.N.y > front.points.Y.y) {
+    let PPrime = utilities.getIntersection(front.points["K'"], front.points.N, front.points.Y.squareRight(- halfHip), front.points.Y, pattern.dimensions, {name: "P'"});
+    let PDoublePrime = utilities.getIntersection(front.points["K''"], front.points.N, front.points.Y.squareRight(- halfHip), front.points.Y, pattern.dimensions, {name: "P''", labelDir: 'W'});
+    halfHipDartGap = PPrime.distTo(PDoublePrime)
+    YtoPInitialActions = [PPrime, PDoublePrime];
   }
-  frontBodice.points.P = frontBodice.points.Y.squareRight(- (halfHip + halfHipDartGap));
+  pattern.addStep({
+    actions: [
+      ...YtoPInitialActions,
+      front.points.Y.squareRight(- (halfHip + halfHipDartGap), {name: 'P'}),
+    ],
+    patternPieceName: 'front',
+  });
 
   // 35 W to Q
   let backHip = 9 + 3/4;
-  frontBodice.points.Q = frontBodice.points.W.squareRight(- backHip);
+  pattern.addStep({
+    actions: [
+      front.points.W.squareRight(- backHip, {name: 'Q'}),
+    ],
+    patternPieceName: 'front',
+  });
 
   // 36 O to Q
+  let backOQ = new Curve(Object.assign({}, pattern.patternPieces.back.curves["Q'O"]));
+  delete backOQ.curveStyle;
+  delete backOQ.options.styleName;
+  // TODO: This is unbelievably ugly. There needs to be a better way to
+  //       reset the styling when creating a new curve.
   let flippedAndOriginalCurves = utilities.getFlippedEulerPerpendicularWithPointInside(
-    backBodice.curves.OQ,
-    frontBodice.points.O,
-    [frontBodice.points.P, frontBodice.points.Q],
-    [frontBodice.points.W, frontBodice.points.Q],
+    backOQ,
+    front.points.O,
+    [front.points.P, front.points.Q],
+    [front.points.W, front.points.Q],
+    pattern.dimensions,
     {isLeftHanded: false}
   );
-  frontBodice.curves.OQ = flippedAndOriginalCurves.flipped;
-  frontBodice.points["Q'"] = frontBodice.curves.OQ.points[0];
-  frontBodice.points["Q'"].labelDir = "W";
-  frontBodice.curves["WQ'"] = utilities.getLine(frontBodice.points.W, frontBodice.points["Q'"]);
+  let OQ = flippedAndOriginalCurves.flipped;
+  let QPrime = OQ.points[0];
+  QPrime.labelDir = "W";
+  QPrime.name = "Q'";
+  OQ = new Curve(OQ);
+  pattern.addStep({
+    actions: [
+      OQ, QPrime,
+      utilities.getLine(front.points.W, QPrime),
+    ],
+    patternPieceName: 'front',
+  });
 
   // 36 Part 2, Fixing OQ on Back
-  if (flippedAndOriginalCurves.original !== backBodice.curves.OQ) {
-    backBodice.curves.OQ = flippedAndOriginalCurves.original;
-    backBodice.points["Q'"] = backBodice.curves.OQ.points[0];
-    backBodice.points["Q'"].labelDir = "E";
-    backBodice.curves["RQ'"] = utilities.getLine(backBodice.points.R, backBodice.points["Q'"]);
+  let newBackOQ = flippedAndOriginalCurves.original;
+  let backQPrime = newBackOQ.points[0];
+  backQPrime.labelDir = 'E';
+  if (backQPrime.approx(backOQ.points[0])) {
+    backQPrime.name = "Q'";
+  } else {
+    backQPrime.name = "Q''";
   }
+  backOQ = new Curve(newBackOQ);
+  pattern.addStep({
+    actions: [
+      backOQ,
+      backQPrime,
+      utilities.getLine(pattern.patternPieces.back.points.R, backQPrime),
+    ],
+    patternPieceName: 'back',
+  });
 
   // 37 Add line above side level
   // 38 R' to L to S
   let bustWidthSLinePoint, sideLevelGuidePoint;
   let sideLevelGuideOffset = 1 + 1/8;
-  let sideLevelPointDistance = 10;
-  let bustPointToSideLevelPointDistance = sideLevelPointDistance - frontBodice.points.L.distTo(frontBodice.points["R'"]);
+  let sideLevelPointDistance = 10; // TODO: this is completely arbirtray
+  let bustPointToSideLevelPointDistance = sideLevelPointDistance - front.points.L.distTo(front.points["R'"]);
+  let sideLevelGuideActions = [];
 
-  if (!isMasculine) {
-    let sideLevelPoint = utilities.getIntersection(frontBodice.points.L, bustWidthCrossBackGuidPoint, frontBodice.points.R, backBodice.points.E);
+  if (!pattern.isMasculine) {
+    let sideLevelPoint = utilities.getIntersection(front.points.L, front.points["L'"], front.points.R, pattern.patternPieces.back.points.E, pattern.dimensions);
     bustWidthSLinePoint = sideLevelPoint.squareUp(sideLevelGuideOffset);
     sideLevelGuidePoint = bustWidthSLinePoint.squareRight(- bustPointToSideLevelPointDistance)
-    frontBodice.curves.sideLevelGuide = utilities.getLine(bustWidthSLinePoint, sideLevelGuidePoint, constants.GUIDE_LINE);
+    sideLevelGuideActions.push(utilities.getLine(bustWidthSLinePoint, sideLevelGuidePoint, {styleName: 'guide', name: 'sideLevelGuide'}));
   } else {
-    bustWidthSLinePoint = utilities.getIntersection(frontBodice.points.L, bustWidthCrossBackGuidPoint, frontBodice.points.R, backBodice.points.E);
+    bustWidthSLinePoint = utilities.getIntersection(front.points.L, front.points["L'"], front.points.R, pattern.patternPieces.back.points.E, pattern.dimensions);
     sideLevelGuidePoint = bustWidthSLinePoint.squareRight(-1);
   }
 
-  frontBodice.points.S = utilities.getPointAlongLineDistanceFromPoint([sideLevelGuidePoint, bustWidthSLinePoint], frontBodice.points.L, bustPointToSideLevelPointDistance);
-  frontBodice.curves.LS = utilities.getLine(frontBodice.points.L, frontBodice.points.S, constants.GUIDE_LINE);
+  let S = utilities.getPointAlongLineDistanceFromPoint([sideLevelGuidePoint, bustWidthSLinePoint], front.points.L, bustPointToSideLevelPointDistance, pattern.dimensions, {name: 'S'});
+  pattern.addStep({
+    actions: [
+      ...sideLevelGuideActions,
+      S,
+      utilities.getLine(front.points.L, S, {styleName: 'guide'}),
+    ],
+    patternPieceName: 'front',
+  });
 
   // 39 S to O
-  if (!isMasculine) {
-    frontBodice.curves.SO = utilities.getLine(frontBodice.points.S, frontBodice.points.O, constants.GUIDE_LINE);
+  if (!pattern.isMasculine) {
+    pattern.addStep({
+      actions: [
+        utilities.getLine(front.points.S, front.points.O, {styleName: 'guide'}),
+      ],
+      patternPieceName: 'front',
+    });
   }
 
   // 40 R' to S'
-  if (!isMasculine) {
-    frontBodice.points["S'"] = utilities.getIntersection(frontBodice.points.S, frontBodice.points.O, frontBodice.points["R'"], frontBodice.points["R'"].squareRight(1));
-    frontBodice.curves["LS'"] = utilities.getLine(frontBodice.points.L, frontBodice.points["S'"], constants.GUIDE_LINE);
+  if (!pattern.isMasculine) {
+    let SPrime = utilities.getIntersection(front.points.S, front.points.O, front.points["R'"], front.points["R'"].squareRight(1), pattern.dimensions, {name: "S'"});
+    pattern.addStep({
+      actions: [
+        SPrime,
+        utilities.getLine(front.points.L, SPrime, {styleName: 'guide'}),
+      ],
+      patternPieceName: 'front',
+    });
   }
 
   // 41 S' to S''
-  if (!isMasculine) {
-    let sDoublePrimeDist = 1 + 1/8;
-    frontBodice.points["S''"] = utilities.getPointAlongLine(frontBodice.points["S'"], frontBodice.points.O, sDoublePrimeDist);
-  }
-
   // 42 S'' to L
-  if (!isMasculine) {
-    frontBodice.curves["S''L"] = utilities.getLine(frontBodice.points["S''"], frontBodice.points.L, constants.GUIDE_LINE);
+  if (!pattern.isMasculine) {
+    let sDoublePrimeDist = 1 + 1/8;
+    let SDoublePrime = utilities.getPointAlongLine(front.points["S'"], front.points.O, sDoublePrimeDist, {name: "S''"});
+    pattern.addStep({
+      actions: [
+        SDoublePrime,
+        utilities.getLine(front.points.L, SDoublePrime, {styleName: 'guide'}),
+      ],
+      patternPieceName: 'front',
+    });
   }
 
   // 43 G to I
   let crossBackGuideLength = 6 + 7/8;
-  if (isMasculine) {
-    frontBodice.points.I = frontBodice.points.G.squareRight(- crossBackGuideLength);
+  if (pattern.isMasculine) {
+    pattern.addStep({
+      actions: [
+        front.points.G.squareRight(- crossBackGuideLength, {name: 'I'}),
+      ],
+      patternPieceName: 'front',
+    });
   } else {
-    let cbGuidePoint = frontBodice.points.G.squareRight(- crossBackGuideLength);
-    let cbDartIntF = utilities.getIntersection(cbGuidePoint, frontBodice.points.G, frontBodice.points.F, frontBodice.points.L);
-    let cbDartIntFPrime = utilities.getIntersection(cbGuidePoint, frontBodice.points.G, frontBodice.points["F'"], frontBodice.points.L);
+    let cbGuidePoint = front.points.G.squareRight(- crossBackGuideLength);
+    let cbDartIntF = utilities.getIntersection(cbGuidePoint, front.points.G, front.points.F, front.points.L, pattern.dimensions);
+    let cbDartIntFPrime = utilities.getIntersection(cbGuidePoint, front.points.G, front.points["F'"], front.points.L, pattern.dimensions);
     let dartDist = cbDartIntF.distTo(cbDartIntFPrime);
-    frontBodice.points.I = frontBodice.points.G.squareRight(- (crossBackGuideLength +  dartDist));
+    pattern.addStep({
+      actions: [
+        front.points.G.squareRight(- (crossBackGuideLength +  dartDist), {name: 'I'}),
+      ],
+      patternPieceName: 'front',
+    });
   }
 
   // 44 I to U
-  frontBodice.points.U = utilities.getIntersection(frontBodice.points.I, frontBodice.points.I.squareUp(1), frontBodice.points.S, bustWidthSLinePoint);
-  frontBodice.curves.IU = utilities.getLine(frontBodice.points.I, frontBodice.points.U, constants.GUIDE_LINE);
+  let U = utilities.getIntersection(front.points.I, front.points.I.squareUp(1), front.points.S, bustWidthSLinePoint, pattern.dimensions, {name: 'U'});
+  pattern.addStep({
+    actions: [
+      U,
+      utilities.getLine(front.points.I, U, {styleName: 'guide'}),
+    ],
+    patternPieceName: 'front',
+  });
 
   // 45 L to U
-  if (frontBodice.points.L.y > frontBodice.points.S.y) {
-    frontBodice.curves.LU = utilities.getLine(frontBodice.points.L, frontBodice.points.U, constants.GUIDE_LINE);
+  if (front.points.L.y > front.points.S.y) {
+    pattern.addStep({
+      actions: [
+        utilities.getLine(front.points.L, front.points.U, {styleName: 'guide'}),
+      ],
+      patternPieceName: 'front',
+    });
   }
 
   // 46 E' to I to S
-  frontBodice.curves["E'S_guide"] = utilities.getEulerMidpoint(frontBodice.points["E'"], frontBodice.points.I, frontBodice.points.S, {curveStyle: constants.GUIDE_LINE});
+  pattern.addStep({
+    actions: [
+      utilities.getEulerMidpoint(front.points["E'"], front.points.I, front.points.S, {styleName: 'guide', name: "E'S_guide"}),
+    ],
+    patternPieceName: 'front',
+  });
 
   // 47 U to T
-  if (frontBodice.points.L.y > frontBodice.points.S.y) {
+  if (front.points.L.y > front.points.S.y) {
     // TODO: intersect line with a curve
     //       Intersect LU with E'IS to utilities.get T
   }
@@ -730,23 +931,9 @@ export function create() {
     labelDefaultDir: "E",
   });
 
-  // let backBodice = {
-  //   points: {},
-  //   curves: {},
-  // };
-  // let bodiceGuide = {
-  //   curves: {},
-  // };
-  // let frontBodice = {
-  //   points: {},
-  //   curves: {},
-  //   labelColor: "#900",
-  //   labelDefaultDir: "E",
-  // };
   setupGuide(pattern);
   drawBackDraft(pattern);
-  // // console.log(performance.now() - start);
-  // drawFrontDraft(backBodice, frontBodice, false);
+  drawFrontDraft(pattern);
 
   return pattern;
 }
