@@ -921,7 +921,7 @@ export function create() {
   let pattern = new Pattern({
     name:'moulage',
     title: 'Moulage',
-    description: 'Making a moulage.',
+    description: 'This is the moulage you will be making! Don\'t worry that it looks complicated, we\'ll walk you through it step by step. Note: The draft measurements are currently static and the draft is incomplete.',
   });
 
   pattern.patternPieces.guide = new PatternPiece();

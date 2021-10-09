@@ -94,6 +94,9 @@ export default createStore({
   getters: {
     canvas(state) {
       return state.canvas;
-    }
+    },
+    canvasDimensions(state) {
+      return state.canvas.dimensions;
+    },
   }
 })

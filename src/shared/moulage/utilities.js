@@ -1,8 +1,7 @@
 import {Point, Curve} from './classes.js';
 import {BACKGOUND_COLOR, EULER_MAX_LENGTH, EULER_SCALE_LARGE, EULER_SCALE_STD, GRID_SIZE} from './constants.js';
 
-export function draw(canvas, canvasOptions, bodiceGuide, backBodice, frontBodice) {
-  // console.log('bodiceGuide', bodiceGuide)
+export function draw(canvas, canvasOptions, pattern) {
   const scale = canvasOptions.zoom;
   const context = canvas.getContext('2d');
   context.clearRect(0, 0, canvas.width, canvas.height);
@@ -23,11 +22,21 @@ export function draw(canvas, canvasOptions, bodiceGuide, backBodice, frontBodice
   grid(canvasDetails, context, GRID_SIZE/2, 1/2);
   grid(canvasDetails, context, GRID_SIZE/4, 1/4);
 
-  drawCurves(context, bodiceGuide);
-  drawCurves(context, backBodice);
-  drawCurves(context, frontBodice);
-  drawPoints(context, backBodice);
-  drawPoints(context, frontBodice);
+  if (pattern && pattern.displayPieces) {
+    Object.keys(pattern.displayPieces).forEach((key) => {
+      let patternPiece = pattern.displayPieces[key];
+      if (patternPiece.curves) {
+        drawCurves(context, patternPiece);
+      }
+    });
+    Object.keys(pattern.displayPieces).forEach((key) => {
+      let patternPiece = pattern.displayPieces[key];
+      if (patternPiece.points) {
+        drawPoints(context, patternPiece);
+      }
+    });
+  }
+
   context.restore();
 }
 

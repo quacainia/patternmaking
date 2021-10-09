@@ -48,6 +48,35 @@ export class Pattern {
       }
     });
   }
+
+  sliceDisplaySteps(step) {
+    let stepsSlice = this.steps.slice(0, step);
+
+    let displayPieces = {};
+
+    stepsSlice.forEach(step => {
+      step.actions.forEach(action => {
+        if (!displayPieces[action.patternPieceName]) {
+          // This is for keeping styling of the pattern piece
+          displayPieces[action.patternPieceName] = Object.assign(
+            {},
+            this.patternPieces[action.patternPieceName],
+            {
+              curves: {},
+              points: {},
+            }
+          );
+        }
+        if (action.type === 'point') {
+          displayPieces[action.patternPieceName].points[action.name] = action;
+        } else {
+          displayPieces[action.patternPieceName].curves[action.name] = action;
+        }
+      });
+    });
+
+    return displayPieces;
+  }
 }
 
 export class PatternPiece {

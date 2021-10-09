@@ -97,14 +97,33 @@ export default {
   methods: {
     ...mapMutations('draft', {
       mutateAddPattern: 'ADD_PATTERN',
+      mutatePatternDisplay: 'PATTERN_DISPLAY',
+      mutateSetDisplayPattern: 'SET_DISPLAY_PATTERN',
     }),
+    setDisplayPattern() {
+      this.mutateSetDisplayPattern({patternName: this.draftId});
+      if (this.pattern) {
+        if (!this.stepId) {
+          this.mutatePatternDisplay({patternName: this.draftId, displayPieces: this.pattern.patternPieces});
+        } else {
+          this.mutatePatternDisplay({patternName: this.draftId, displayPieces: this.pattern.sliceDisplaySteps(this.stepId)});
+        }
+      }
+    },
   },
 
   created() {
     if (!this.pattern) {
       this.mutateAddPattern(create());
     }
-  }
+    this.setDisplayPattern();
+  },
+
+  watch: {
+    $route() {
+      this.setDisplayPattern();
+    },
+  },
 }
 
 
