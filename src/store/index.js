@@ -1,6 +1,7 @@
 import { createStore } from 'vuex';
 
 import draftModule from '@/store/modules/draft.js';
+import { GRID_SIZE } from '@/shared/moulage/constants.js';
 
 export default createStore({
   state: {
@@ -61,29 +62,23 @@ export default createStore({
       state.canvas = Object.assign({}, state.canvas, {zoom: zoomLevel, pan: Object.assign({}, state.canvas.pan, pan), zoomFit: true});
     },
     ZOOM(state, shouldZoomIn) {
-      let zoomLevel = state.canvas.zoom;
+      let oldZoomLevel = state.canvas.zoom;
       let oldPan = state.canvas.pan;
       let newZoomLevel;
 
-      let {width, height} = state.canvas.dimensions;
-      let oldZoomWidth = width / zoomLevel;
-      let oldZoomHeight = height / zoomLevel;
+      let gridXCenter = ((state.canvas.dimensions.width - oldPan.xPadding)/2 - oldPan.x)/oldZoomLevel / GRID_SIZE;
+      let gridYCenter = (state.canvas.dimensions.height/2 - oldPan.y)/oldZoomLevel / GRID_SIZE;
 
       if (shouldZoomIn) {
-        newZoomLevel = zoomLevel * 1.1;
+        newZoomLevel = oldZoomLevel * 1.1;
       } else {
-        newZoomLevel = zoomLevel / 1.1;
+        newZoomLevel = oldZoomLevel / 1.1;
       }
 
-      let newZoomWidth = width / newZoomLevel;
-      let newZoomHeight = height / newZoomLevel;
-      let centerX = oldZoomWidth/2 - oldPan.x;
-      let centerY = oldZoomHeight/2 - oldPan.y;
+      let newPanX = (state.canvas.dimensions.width - oldPan.xPadding)/2 - gridXCenter*GRID_SIZE*newZoomLevel
+      let newPanY = state.canvas.dimensions.height/2 - gridYCenter*GRID_SIZE*newZoomLevel
 
-      let panX = newZoomWidth/2 - centerX;
-      let panY = newZoomHeight/2 - centerY;
-
-      state.canvas = Object.assign({}, state.canvas, {zoom: newZoomLevel, pan: Object.assign({}, oldPan, {x: panX, y: panY}), zoomFit: false});
+      state.canvas = Object.assign({}, state.canvas, {zoom: newZoomLevel, pan: Object.assign({}, oldPan, {x: newPanX, y: newPanY}), zoomFit: false});
     },
   },
   actions: {
