@@ -45,7 +45,7 @@
 
 
 <script>
-import { mapGetters, mapMutations } from 'vuex';
+import { mapMutations } from 'vuex';
 import {GRID_SIZE, WORKSPACE_HEIGHT, WORKSPACE_WIDTH} from '@/shared/moulage/constants.js';
 
 export default {
@@ -55,9 +55,6 @@ export default {
   },
 
   computed: {
-    ...mapGetters({
-      getCanvas: 'canvas',
-    }),
   },
 
   methods: {

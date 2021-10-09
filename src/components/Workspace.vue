@@ -8,7 +8,6 @@
 import { mapGetters, mapMutations } from 'vuex';
 
 import {GRID_SIZE, WORKSPACE_HEIGHT, WORKSPACE_WIDTH} from '@/shared/moulage/constants.js';
-import {create} from '@/shared/moulage/patterns/bodice.js';
 import {draw} from '@/shared/moulage/utilities.js';
 
 export default {
@@ -36,8 +35,15 @@ export default {
 
   computed: {
     ...mapGetters({
-      getCanvas: 'canvas'
+      getCanvas: 'canvas',
+      getCanvasDimensions: 'canvasDimensions',
     }),
+    ...mapGetters('draft', {
+      getDisplayPattern: 'displayPattern',
+    }),
+    displayPieces() {
+      return this.getDisplayPattern && this.getDisplayPattern.displayPieces;
+    },
   },
 
   created() {
@@ -49,6 +55,15 @@ export default {
       mutateCanvasSize: "CANVAS_SIZE",
       mutateFitZoom: "FIT_ZOOM",
     }),
+    redraw(shouldRefit = true) {
+      draw(this.$refs.canvas, this.getCanvas, this.getDisplayPattern);
+      if (shouldRefit && this.getCanvas.zoomFit) {
+        this.mutateFitZoom({
+          width: WORKSPACE_WIDTH * GRID_SIZE,
+          height: WORKSPACE_HEIGHT * GRID_SIZE, // TODO: These are hardcoded
+        });
+      }
+    },
     resizeCanvas() {
       let width = window.innerWidth * 2;
       let height = window.innerHeight * 2;
@@ -56,28 +71,11 @@ export default {
       this.$refs.canvas.width = width;
       this.$refs.canvas.height = height;
       this.mutateCanvasSize({width, height});
-      draw(this.$refs.canvas, this.getCanvas, this.bodiceGuide, this.backBodice, this.frontBodice);
-      if (this.getCanvas.zoomFit) {
-        this.mutateFitZoom({
-          width: WORKSPACE_WIDTH * GRID_SIZE,
-          height: WORKSPACE_HEIGHT * GRID_SIZE,
-        });
-      }
     }
   },
 
   mounted() {
-    // let start = performance.now();
     this.resizeCanvas();
-
-    let pattern = create();
-    // console.log('front', performance.now() - start);
-    draw(this.$refs.canvas, this.getCanvas, pattern.patternPieces.guide, pattern.patternPieces.back, pattern.patternPieces.front);
-    // console.log('draw', performance.now() - start);
-
-    this.backBodice = pattern.patternPieces.back;
-    this.bodiceGuide = pattern.patternPieces.guide;
-    this.frontBodice = pattern.patternPieces.front;
   },
 
   unmounted() {
@@ -85,9 +83,15 @@ export default {
   },
 
   watch: {
+    getCanvasDimensions() {
+      this.redraw();
+    },
     getCanvas() {
-      draw(this.$refs.canvas, this.getCanvas, this.bodiceGuide, this.backBodice, this.frontBodice);
-    }
+      this.redraw(false);
+    },
+    displayPieces() {
+      this.redraw();
+    },
   }
 }
 </script>
