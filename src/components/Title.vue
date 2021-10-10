@@ -2,7 +2,9 @@
   <div class="title-bar">
     <div>
       <h1 class="title">
-        Moulage
+        <router-link to="/">
+          Moulage
+        </router-link>
       </h1>
     </div>
     <div class="zoom">
@@ -93,5 +95,9 @@ export default {
 }
 .zoom {
   text-align: center;
+}
+h1 > a {
+  color: inherit;
+  text-decoration: inherit;
 }
 </style>

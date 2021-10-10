@@ -132,9 +132,5 @@ h3.title{
 }
 h1.title {
   margin: 0px;
-  a {
-    color: #27F;
-    text-decoration: none;
-  }
 }
 </style>

@@ -1,7 +1,7 @@
 <template>
   <div>
-    <div class="dots-container" ref="dotsContainer">
-      <div class="dots" :class="{hide: !getDisplayPattern}">
+    <div class="dots-container" ref="dotsContainer" :class="{hide: !getDisplayPattern}">
+      <div class="dots">
         <div
           v-for="(step, index) in steps"
           :key="getDisplayPattern+index"
@@ -143,9 +143,9 @@ div.dots-container {
         cursor: default;
       }
     }
-    &.hide {
-      display: none;
-    }
+  }
+  &.hide {
+    display: none;
   }
 }
 </style>
