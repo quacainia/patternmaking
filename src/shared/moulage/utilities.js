@@ -6,7 +6,7 @@ export function draw(canvas, canvasOptions, pattern) {
   const context = canvas.getContext('2d');
   context.clearRect(0, 0, canvas.width, canvas.height);
   context.save();
-  context.translate(canvasOptions.pan.x + canvasOptions.pan.xPadding, canvasOptions.pan.y);
+  context.translate(canvasOptions.pan.x + canvasOptions.pan.leftPadding, canvasOptions.pan.y);
   context.scale(scale, scale);
 
   const canvasDetails = {
@@ -66,8 +66,8 @@ export function drawPoints(context, pattern) {
 
 export function grid(canvasDetails, context, size, width) {
   let {scale, offset} = canvasDetails;
-  let {x, xPadding, y} = offset;
-  let xOffset = (x + xPadding) / scale;
+  let {x, leftPadding, y} = offset;
+  let xOffset = (x + leftPadding) / scale;
   let yOffset = y / scale;
   let startX = (xOffset % size) - xOffset - size;
   let startY = (yOffset % size) - yOffset - size;

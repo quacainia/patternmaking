@@ -11,7 +11,8 @@ export default createStore({
         height: 0,
       },
       pan: {
-        xPadding: 840,
+        leftPadding: 840,
+        bottomPadding: 80,
         x: 0,
         y: 0,
       },
@@ -54,15 +55,15 @@ export default createStore({
         canvasHeight = state.canvas.dimensions.height;
       }
 
-      let xRatio = (canvasWidth - state.canvas.pan.xPadding) / width;
-      let yRatio = canvasHeight / height;
+      let xRatio = (canvasWidth - state.canvas.pan.leftPadding) / width;
+      let yRatio = (canvasHeight - state.canvas.pan.bottomPadding) / height;
       let pan, zoomLevel;
       if (xRatio > yRatio) {
         zoomLevel = yRatio;
-        pan = {x: ((canvasWidth - state.canvas.pan.xPadding) - width * zoomLevel) / 2, y: 0}
+        pan = {x: ((canvasWidth - state.canvas.pan.leftPadding) - width * zoomLevel) / 2, y: 0}
       } else {
         zoomLevel = xRatio;
-        pan = {y: (canvasHeight - height * zoomLevel) / 2, x: 0}
+        pan = {y: ((canvasHeight - state.canvas.pan.bottomPadding) - height * zoomLevel) / 2, x: 0}
       }
       // console.log(Object.assign({}, state.canvas.pan, pan));
       state.canvas = Object.assign({}, state.canvas, {zoom: zoomLevel, pan: Object.assign({}, state.canvas.pan, pan), zoomFit: true});
@@ -72,8 +73,8 @@ export default createStore({
       let oldPan = state.canvas.pan;
       let newZoomLevel;
 
-      let gridXCenter = ((state.canvas.dimensions.width - oldPan.xPadding)/2 - oldPan.x)/oldZoomLevel / GRID_SIZE;
-      let gridYCenter = (state.canvas.dimensions.height/2 - oldPan.y)/oldZoomLevel / GRID_SIZE;
+      let gridXCenter = ((state.canvas.dimensions.width - oldPan.leftPadding)/2 - oldPan.x)/oldZoomLevel / GRID_SIZE;
+      let gridYCenter = ((state.canvas.dimensions.height - oldPan.bottomPadding)/2 - oldPan.y)/oldZoomLevel / GRID_SIZE;
 
       if (shouldZoomIn) {
         newZoomLevel = oldZoomLevel * 1.1;
@@ -81,8 +82,8 @@ export default createStore({
         newZoomLevel = oldZoomLevel / 1.1;
       }
 
-      let newPanX = (state.canvas.dimensions.width - oldPan.xPadding)/2 - gridXCenter*GRID_SIZE*newZoomLevel
-      let newPanY = state.canvas.dimensions.height/2 - gridYCenter*GRID_SIZE*newZoomLevel
+      let newPanX = (state.canvas.dimensions.width - oldPan.leftPadding)/2 - gridXCenter*GRID_SIZE*newZoomLevel
+      let newPanY = (state.canvas.dimensions.height - oldPan.bottomPadding)/2 - gridYCenter*GRID_SIZE*newZoomLevel
 
       state.canvas = Object.assign({}, state.canvas, {zoom: newZoomLevel, pan: Object.assign({}, oldPan, {x: newPanX, y: newPanY}), zoomFit: false});
     },
