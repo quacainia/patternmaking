@@ -10,6 +10,7 @@
 
       <router-view/>
     </Tile>
+    <Dots />
   </div>
 </template>
 
@@ -18,9 +19,10 @@ import _throttle from 'lodash/throttle';
 import { mapGetters, mapMutations } from 'vuex';
 
 // @ is an alias to /src
-import Workspace from '@/components/Workspace.vue';
+import Dots from '@/components/Dots.vue';
 import Tile from '@/components/Tile.vue';
 import Title from '@/components/Title.vue';
+import Workspace from '@/components/Workspace.vue';
 
 export default {
   name: 'Home',
@@ -31,6 +33,7 @@ export default {
     }
   },
   components: {
+    Dots,
     Tile,
     Title,
     Workspace,
@@ -129,9 +132,5 @@ h3.title{
 }
 h1.title {
   margin: 0px;
-  a {
-    color: #27F;
-    text-decoration: none;
-  }
 }
 </style>
