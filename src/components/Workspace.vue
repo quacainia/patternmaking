@@ -1,6 +1,9 @@
 <template>
   <div class="canvas-container">
-    <canvas class="myCanvas" ref="canvas"></canvas>
+    <canvas
+      class="myCanvas"
+      ref="canvas"
+    />
   </div>
 </template>
 
@@ -15,21 +18,8 @@ export default {
 
   data: function() {
     return {
-      backBodice: {
-        points: {},
-        curves: {},
-      },
-
-      bodiceGuide: {
-        curves: {},
-      },
-
-      frontBodice: {
-        points: {},
-        curves: {},
-        labelColor: "#900",
-        labelDefaultDir: "E",
-      },
+      isMouseDown: false,
+      startDrag: {},
     }
   },
 

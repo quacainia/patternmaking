@@ -1,17 +1,22 @@
 <template>
-  <Workspace></Workspace>
-  <Tile>
-    <Title />
+  <div @mouseup="mouseup" @mousemove="mousemove">
+    <Workspace @mousedown="mousedown" @mouseout.stop="" />
+    <Tile @mouseout.stop="">
+      <Title />
 
-    <p class="warning">
-      <strong>Heads up!</strong> This page is currently feature incomplete and in demo mode only. <router-link to="/demo">More info.</router-link>
-    </p>
+      <p class="warning">
+        <strong>Heads up!</strong> This page is currently feature incomplete and in demo mode only. <router-link to="/demo">More info.</router-link>
+      </p>
 
-    <router-view/>
-  </Tile>
+      <router-view/>
+    </Tile>
+  </div>
 </template>
 
 <script type="text/javascript">
+import _throttle from 'lodash/throttle';
+import { mapGetters, mapMutations } from 'vuex';
+
 // @ is an alias to /src
 import Workspace from '@/components/Workspace.vue';
 import Tile from '@/components/Tile.vue';
@@ -19,11 +24,60 @@ import Title from '@/components/Title.vue';
 
 export default {
   name: 'Home',
+  data: function() {
+    return {
+      isMouseDown: false,
+      startDrag: {},
+    }
+  },
   components: {
     Tile,
     Title,
     Workspace,
-  }
+  },
+  computed: {
+    ...mapGetters({
+      getCanvas: 'canvas',
+    })
+  },
+
+  created() {
+    window.addEventListener("mouseout", this.mouseout);
+  },
+
+  methods: {
+    ...mapMutations({
+      mutatePan: 'MOUSE_PAN',
+    }),
+    mousedown(event) {
+      this.isMouseDown = true;
+      this.startDrag.x = event.clientX;
+      this.startDrag.y = event.clientY;
+      this.startDrag.canvas = this.getCanvas;
+      event.preventDefault();
+      return false;
+    },
+    mousemove(event) {
+      if (this.isMouseDown) {
+        this.mutatePanThrottle({x: event.clientX, y: event.clientY});
+      }
+    },
+    mouseout() {
+      this.isMouseDown = false;
+    },
+    mouseup() {
+      this.isMouseDown = false;
+    },
+    mutatePanThrottle: _throttle(
+      function(end) {
+        this.mutatePan({start: this.startDrag, end});
+      }, 100
+    ),
+  },
+
+  unmounted() {
+    window.removeEventListener("mouseout", this.mouseout);
+  },
 }
 </script>
 

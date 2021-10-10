@@ -25,6 +25,12 @@ export default createStore({
         state.canvas = Object.assign({}, state.canvas, {dimensions: {width, height}});
       }
     },
+    MOUSE_PAN(state, {start, end}) {
+      let oldPan = state.canvas.pan;
+      let newPanX = start.canvas.pan.x + (end.x - start.x)*2;
+      let newPanY = start.canvas.pan.y + (end.y - start.y)*2;
+      state.canvas = Object.assign({}, state.canvas, {pan: Object.assign({}, oldPan, {x: newPanX, y: newPanY}), zoomFit: false});
+    },
     PAN(state, {x, y, reset}) {
       let oldPan = state.canvas.pan;
       let stateZoom = state.canvas.zoom;
