@@ -3,6 +3,7 @@
     <canvas
       class="myCanvas"
       ref="canvas"
+      @wheel="scroll"
     />
   </div>
 </template>
@@ -44,6 +45,7 @@ export default {
     ...mapMutations({
       mutateCanvasSize: "CANVAS_SIZE",
       mutateFitZoom: "FIT_ZOOM",
+      mutateZoom: 'ZOOM',
     }),
     redraw(shouldRefit = true) {
       draw(this.$refs.canvas, this.getCanvas, this.getDisplayPattern);
@@ -61,7 +63,18 @@ export default {
       this.$refs.canvas.width = width;
       this.$refs.canvas.height = height;
       this.mutateCanvasSize({width, height});
-    }
+    },
+    scroll: function(){
+      let startTime;
+      return function (event) {
+        if (!startTime || performance.now() - startTime > 100) {
+          startTime = performance.now();
+          let deltaY = Math.min(Math.max(event.deltaY, -20), 20)
+          this.mutateZoom(1.02 ** deltaY);
+        }
+        event.preventDefault()
+      }
+    }(), // TODO: this can't be the right way to handle scoping startTime
   },
 
   mounted() {
