@@ -8,8 +8,8 @@
       </h1>
     </div>
     <div class="zoom">
-      <button @click="zoom(false)">-</button>
-      <button @click="zoom(true)">+</button>
+      <button @click="zoom(1/1.1)">-</button>
+      <button @click="zoom(1.1)">+</button>
       <br />
       <button @click="fitZoom">Fit</button>
     </div>

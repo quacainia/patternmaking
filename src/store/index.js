@@ -68,7 +68,7 @@ export default createStore({
       // console.log(Object.assign({}, state.canvas.pan, pan));
       state.canvas = Object.assign({}, state.canvas, {zoom: zoomLevel, pan: Object.assign({}, state.canvas.pan, pan), zoomFit: true});
     },
-    ZOOM(state, shouldZoomIn) {
+    ZOOM(state, zoomFactor) {
       let oldZoomLevel = state.canvas.zoom;
       let oldPan = state.canvas.pan;
       let newZoomLevel;
@@ -76,11 +76,7 @@ export default createStore({
       let gridXCenter = ((state.canvas.dimensions.width - oldPan.leftPadding)/2 - oldPan.x)/oldZoomLevel / GRID_SIZE;
       let gridYCenter = ((state.canvas.dimensions.height - oldPan.bottomPadding)/2 - oldPan.y)/oldZoomLevel / GRID_SIZE;
 
-      if (shouldZoomIn) {
-        newZoomLevel = oldZoomLevel * 1.1;
-      } else {
-        newZoomLevel = oldZoomLevel / 1.1;
-      }
+      newZoomLevel = Math.min(Math.max(oldZoomLevel * zoomFactor, 0.1), 10);
 
       let newPanX = (state.canvas.dimensions.width - oldPan.leftPadding)/2 - gridXCenter*GRID_SIZE*newZoomLevel
       let newPanY = (state.canvas.dimensions.height - oldPan.bottomPadding)/2 - gridYCenter*GRID_SIZE*newZoomLevel
