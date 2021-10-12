@@ -227,10 +227,10 @@ export class Point {
 export class Curve {
   // A long list of points to display as a curve
 
-  constructor(values) {
+  constructor(values, options) {
     this.type = 'curve';
     this.points = values.points || [];
-    this.options = values.options || {};
+    this.options = Object.assign({}, values.options, options);
 
     this.curveLength = values.curveLength || null;
 
@@ -242,10 +242,13 @@ export class Curve {
       case 'temporary':
         curveStyle = {color: "#555", lineWidth: 1, dashed: true};
         break;
+      case 'final':
       default:
+        curveStyle = {color: "#000", lineWidth: 3};
         break;
     }
-    this.curveStyle = Object.assign(curveStyle, this.options.curveStyle || values.curveStyle);
+    let optionsCurveStyle = (this.options.styleName) ? {} : this.options.curveStyle;
+    this.curveStyle = Object.assign({}, values.curveStyle, curveStyle, optionsCurveStyle);
 
     this.endDistance = this.options.endDistance || null;
     this.endPoint = this.points[this.points.length - 1];
@@ -254,7 +257,7 @@ export class Curve {
     this.midPoint = values.midPoint;
     this.mutations = values.mutations || [];
 
-    this.name = values.name || this.options.name;
+    this.name = this.options.name || values.name;
     if (!this.name && this.points.length > 1 && this.points[0].name && this.points[this.points.length-1].name) {
       this.name = "" + this.points[0].name + this.points[this.points.length-1].name;
     }

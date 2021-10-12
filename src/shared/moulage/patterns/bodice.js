@@ -748,11 +748,7 @@ export function drawFrontDraft(pattern) {
   });
 
   // 36 O to Q
-  let backOQ = new Curve(Object.assign({}, pattern.patternPieces.back.curves["Q'O"]));
-  delete backOQ.curveStyle;
-  delete backOQ.options.styleName;
-  // TODO: This is unbelievably ugly. There needs to be a better way to
-  //       reset the styling when creating a new curve.
+  let backOQ = new Curve(Object.assign({}, pattern.patternPieces.back.curves["Q'O"]), {styleName: 'final'});
   let flippedAndOriginalCurves = utilities.getFlippedEulerPerpendicularWithPointInside(
     backOQ,
     front.points.O,
