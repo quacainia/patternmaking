@@ -60,7 +60,7 @@ export function drawCurves(context, pattern) {
 export function drawPoints(context, pattern) {
   Object.keys(pattern.points).forEach((key) => {
     drawPoint(context, pattern.points[key]);
-    drawPointLabel(context, pattern.points[key], key, {color: pattern.labelColor, dir: pattern.labelDefaultDir});
+    drawPointLabel(context, pattern.points[key], key, pattern);
   });
 }
 
@@ -96,25 +96,24 @@ export function getLine(start, end, options) {
 }
 
 export function drawPoint(context, point) {
+  let size = point.size || 4;
   context.beginPath();
-  context.arc(...point.canvas(), 4, 0, 2 * Math.PI, false);
+  context.arc(...point.canvas(), size, 0, 2 * Math.PI, false);
   context.fillStyle = "#FFF";
   context.fill();
-  context.lineWidth = 3;
+  context.lineWidth = size*.75;
   context.strokeStyle = "#900";
   context.stroke();
 }
 
-export function drawPointLabel(context, point, label, options) {
+export function drawPointLabel(context, point, label, pattern) {
   let offsetRight = 0, offsetBottom = 0, textMetrics,
-      {color = "#000", dir = "W"} = options ? options : {},
       textWidth, textHeight;
+  let {labelColor = "#000", labelDefaultDir = "W", labelFont = '18pt serif'} = pattern || {};
 
-  if (point.labelDir) {
-    dir = point.labelDir;
-  }
+  let dir = point.labelDir || labelDefaultDir;
 
-  context.font = '18pt serif';
+  context.font = labelFont;
   context.textAlign = 'center';
   context.textBaseline = 'middle';
   textMetrics = context.measureText(label);
@@ -143,7 +142,7 @@ export function drawPointLabel(context, point, label, options) {
     textMetrics.actualBoundingBoxAscent + textMetrics.actualBoundingBoxDescent,
   );
 
-  context.fillStyle = color;
+  context.fillStyle = labelColor;
   context.fillText(label, ...offsetPoint.canvas());
 }
 
