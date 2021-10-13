@@ -42,6 +42,7 @@ export class Pattern {
       let actionPatternPiece = patternPieces[action.patternPieceName];
 
       if (action.type === 'point') {
+        action.labelDir = action.labelDir || actionPatternPiece.labelDefaultDir;
         actionPatternPiece.points[action.name] = action;
       } else {
         actionPatternPiece.curves[action.name] = action;
@@ -50,7 +51,7 @@ export class Pattern {
   }
 
   sliceDisplaySteps(step) {
-    let stepsSlice = this.steps.slice(0, step);
+    let stepsSlice = this.steps.slice(0, step-1);
 
     let displayPieces = {};
 
@@ -64,7 +65,7 @@ export class Pattern {
             {
               curves: {},
               points: {},
-            }
+            },
           );
         }
         if (action.type === 'point') {
@@ -73,6 +74,19 @@ export class Pattern {
           displayPieces[action.patternPieceName].curves[action.name] = action;
         }
       });
+    });
+
+    displayPieces._currentStep = new PatternPiece({
+      labelColor: '#B1B',
+      labelFont: '28pt serif',
+    });
+
+    this.steps[step-1].actions.forEach(action => {
+      if (action.type === 'point') {
+        displayPieces._currentStep.points[action.name] = new Point(action, {displayCurrentStep: true});
+      } else {
+        displayPieces._currentStep.curves[action.name] = new Curve(action, {displayCurrentStep: true});
+      }
     });
 
     return displayPieces;
@@ -86,22 +100,40 @@ export class PatternPiece {
     this.points = {};
     this.labelColor = options.labelColor;
     this.labelDefaultDir = options.labelDefaultDir;
+    this.labelFont = options.labelFont;
   }
 }
 
 export class Point {
   // Really a vector class, but try to ignore that
 
-  constructor(values, options) {
+  constructor(point, options) {
     this.type = 'point';
-    this.values = values;
-    this.x = values[0];
-    this.y = values[1];
+    if (Array.isArray(point)) {
+      this.values = point;
+    } else {
+      this.values = point.values;
+    }
 
-    this.options = options;
-    this.name = options && options.name;
-    this.isGuide = options && options.isGuide;
-    this.labelDir = options && options.labelDir;
+    this.x = this.values[0];
+    this.y = this.values[1];
+
+    this.color = point.color;
+    this.size = point.size;
+
+    this.options = Object.assign({}, this.values.options, options);
+    this.name = this.options.name || point.name;
+    this.displayCurrentStep = this.options.displayCurrentStep || point.displayCurrentStep;
+    this.isGuide = this.options.isGuide || point.isGuide;
+    this.labelDir = this.options.labelDir || point.labelDir;
+    this.labelDefaultDir = this.options.labelDefaultDir || point.labelDefaultDir;
+    this.patternPieceName = this.options.patternPieceName || point.patternPieceName;
+    this.stepId = point.stepId;
+
+    if (this.displayCurrentStep) {
+      this.color = '#606';
+      this.size = 8;
+    }
   }
 
   *canvas() {
@@ -235,12 +267,22 @@ export class Curve {
     this.curveLength = values.curveLength || null;
 
     let curveStyle = {};
-    switch(this.options.styleName) {
+    let styleName = (this.options.displayCurrentStep) ? (this.options.styleName || 'final') + 'Current' : this.options.styleName;
+    switch(styleName) {
       case 'guide':
         curveStyle = {color: "#555", lineWidth: 1};
         break;
+      case 'guideCurrent':
+        curveStyle = {color: "#F7F", lineWidth: 4};
+        break;
       case 'temporary':
         curveStyle = {color: "#555", lineWidth: 1, dashed: true};
+        break;
+      case 'temporaryCurrent':
+        curveStyle = {color: "#F7F", lineWidth: 4, dashed: true};
+        break;
+      case 'finalCurrent':
+        curveStyle = {color: "#F2F", lineWidth: 7};
         break;
       case 'final':
       default:
