@@ -1,10 +1,10 @@
 import {Curve, Pattern, PatternPiece, Point} from '@/shared/moulage/classes.js';
 import * as utilities from '@/shared/moulage/utilities.js';
 
-let backTop = new Point([1,1], {name: 'backTop', styleName: 'guide'});
-let backBottom = new Point([1,29], {name: 'backBottom', styleName: 'guide'});
-let frontTop = new Point([29,1], {name: 'frontTop', styleName: 'guide'});
-let frontBottom = new Point([29,29], {name: 'frontBottom', styleName: 'guide'});
+let backTop = new Point([1,1], {name: 'Back Top', styleName: 'guide'});
+let backBottom = new Point([1,29], {name: 'Back Bottom', styleName: 'guide'});
+let frontTop = new Point([29,1], {name: 'Front Top', styleName: 'guide'});
+let frontBottom = new Point([29,29], {name: 'Front Bottom', styleName: 'guide'});
 
 export let initialPoints = {
   backBottom,
@@ -26,10 +26,13 @@ export function setupGuide(pattern) {
     },
   }
 
+  // TODO: Auto-generate instructions for end points of initial guide lines
+  backTop.instructions = 'Establish point 1 inch from both the top and left of the page.';
+  backBottom = backTop.squareUp(-28, {name: 'Back Bottom'});
   pattern.addStep({
     actions: [
-      backBottom,
       backTop,
+      backBottom,
       utilities.getLine(backTop, backBottom, {styleName: 'guide', name: 'centerBack'}),
     ],
     name: 'centerBack',
@@ -38,10 +41,12 @@ export function setupGuide(pattern) {
     title: 'Draw center back guide line',
   });
 
+  frontTop.instructions = 'Establish point 1 inch from both the top and right of the page.';
+  frontBottom = frontTop.squareUp(-28, {name: 'Front Bottom'});
   pattern.addStep({
     actions: [
-      frontBottom,
       frontTop,
+      frontBottom,
       utilities.getLine(frontTop, frontBottom, {styleName: 'guide', name: 'centerFront'}),
     ],
     name: 'centerFront',
@@ -166,6 +171,7 @@ export function drawBackDraft(pattern) {
   });
 
   // 13 W to K
+  // TODO - Create a squareUpToIntersection function to generate instructions
   let K = back.points.W.addv(back.points.E.subv(back.points.D), {name: 'K'});
   pattern.addStep({
     actions: [
@@ -347,6 +353,7 @@ export function drawBackDraft(pattern) {
   let GPrime = utilities.getIntersection(back.points.G, front.points.Y, back.points["F'"], back.points["R'"], pattern.dimensions, {name: "G'", labelDir: 'NE'});
   let PPrime = utilities.getIntersection(back.points.N, back.points.V, back.points.G, front.points.Y, pattern.dimensions, {name: "P'"});
   let PDoublePrime = utilities.getIntersection(back.points["N'"], back.points.V, back.points.G, front.points.Y, pattern.dimensions, {name: "P''", labelDir: 'E'});
+  // TODO: Auto-generate instructions for distance from G' to P
   let P = GPrime.squareRight(halfHip + PPrime.distTo(PDoublePrime), {name: 'P'});
   pattern.addStep({
     actions: [
@@ -365,6 +372,7 @@ export function drawBackDraft(pattern) {
   });
 
   // 44 O to Q'
+  // TODO: Auto-generate instructions for point Q'
   let OQ = utilities.getEulerPerpendicularWithPointInside(
     back.points.O, [back.points.P, back.points.Q], [back.points.R, back.points.Q], pattern.dimensions, {isLeftHanded: true, styleName: 'guide'}
   );
@@ -376,7 +384,6 @@ export function drawBackDraft(pattern) {
     actions: [
       OQ, QPrime,
       utilities.getLine(back.points.R, QPrime, {styleName: 'guide'}),
-      // TODO: Wait until adjusted with the front
     ],
     patternPieceName: 'back',
   });
@@ -412,6 +419,7 @@ export function drawBackDraft(pattern) {
   });
 
   // 48 O to M
+  // TODO: Auto-generate instructions for distance of M, currently weird
   pattern.addStep({
     actions: [
       utilities.getPointAlongLine(back.points.O, back.points.L, back.points.O.distTo(back.points.L)/3, {name: 'M', labelDir: 'E'}),
@@ -481,6 +489,7 @@ export function drawBackDraft(pattern) {
   // TODO: Make arrows for grainline
 
   // 55 mitre the dart
+  // TODO: Auto-generate instructions for mitring a dart.
   let mitredMidPoint = utilities.mitreDart(back.points.S, back.points.C, back.points.J, back.points["J'"], pattern.dimensions, {name: "J''", labelDir: 'N'});
   pattern.addStep({
     actions: [
@@ -730,6 +739,7 @@ export function drawFrontDraft(pattern) {
     halfHipDartGap = PPrime.distTo(PDoublePrime)
     YtoPInitialActions = [PPrime, PDoublePrime];
   }
+  // TODO: Auto-generate instructions for P with intelligible distance
   pattern.addStep({
     actions: [
       ...YtoPInitialActions,
@@ -758,6 +768,7 @@ export function drawFrontDraft(pattern) {
     {isLeftHanded: false}
   );
   let OQ = flippedAndOriginalCurves.flipped;
+  // TODO: Auto-generate instructions for point Q' 
   let QPrime = OQ.points[0];
   QPrime.labelDir = "W";
   QPrime.name = "Q'";
@@ -774,6 +785,7 @@ export function drawFrontDraft(pattern) {
   let newBackOQ = flippedAndOriginalCurves.original;
   let backQPrime = newBackOQ.points[0];
   backQPrime.labelDir = 'E';
+  // TODO: Auto-generate instructions for point Q' 
   if (backQPrime.approx(backOQ.points[0])) {
     backQPrime.name = "Q'";
   } else {
@@ -807,6 +819,7 @@ export function drawFrontDraft(pattern) {
     sideLevelGuidePoint = bustWidthSLinePoint.squareRight(-1);
   }
 
+  // TODO: Auto-generate instructions for front point S 
   let S = utilities.getPointAlongLineDistanceFromPoint([sideLevelGuidePoint, bustWidthSLinePoint], front.points.L, bustPointToSideLevelPointDistance, pattern.dimensions, {name: 'S'});
   pattern.addStep({
     actions: [
@@ -828,6 +841,7 @@ export function drawFrontDraft(pattern) {
   }
 
   // 40 R' to S'
+  // TODO: Auto-generate instructinos for S', which is squareRight to intersection
   if (!pattern.isMasculine) {
     let SPrime = utilities.getIntersection(front.points.S, front.points.O, front.points["R'"], front.points["R'"].squareRight(1), pattern.dimensions, {name: "S'"});
     pattern.addStep({
@@ -854,6 +868,7 @@ export function drawFrontDraft(pattern) {
   }
 
   // 43 G to I
+  // TODO: Auto-generate non-confusing instructions for distance to front point I feminine
   let crossBackGuideLength = 6 + 7/8;
   if (pattern.isMasculine) {
     pattern.addStep({
@@ -876,6 +891,7 @@ export function drawFrontDraft(pattern) {
   }
 
   // 44 I to U
+  // TODO: getIntersection should accept Curve objects and read the name of the curve
   let U = utilities.getIntersection(front.points.I, front.points.I.squareUp(1), front.points.S, bustWidthSLinePoint, pattern.dimensions, {name: 'U'});
   pattern.addStep({
     actions: [
@@ -918,6 +934,7 @@ export function create() {
     name:'moulage',
     title: 'Moulage',
     description: 'This is the moulage you will be making! Don\'t worry that it looks complicated, we\'ll walk you through it step by step. Note: The draft measurements are currently static and the draft is incomplete.',
+    isMasculine: false,
   });
 
   pattern.patternPieces.guide = new PatternPiece();

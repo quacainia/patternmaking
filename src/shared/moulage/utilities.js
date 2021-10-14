@@ -819,6 +819,9 @@ export function getPointAlongLine(point1, point2, distance, options) {
   let v = point2.subv(point1);
   let n = v.norm()
   let u = v.div(n);
+  if (options && options.name && !options.generatedInstructions) {
+    options.generatedInstructions = `Establish point ${options.name} ${Math.abs(distance)} inches from ${point1.name} along line ${point1.name}-${point2.name}`;
+  }
   return point1.addv(u.mult(distance), options);
 }
 
@@ -854,6 +857,9 @@ export function getPointAlongLineDistanceFromPoint(line, point, distance, canvas
     console.error("getPointAlongLineDistanceFromPoint: distance not close enough to line provides", line, point, distance, distanceFromPointToNormal);
     return null;
   }
+  if (options && options.name && !options.generatedInstructions) {
+    options.generatedInstructions = `Establish point ${options.name} ${distance} inches from point ${point.name} along line ${line[0].name}-${line[1].name}`;
+  }
   solution1 = getPointAlongLine(normalPoint, line[0], distanceFromNormalAlongLine, options);
   solution2 = getPointAlongLine(normalPoint, line[0], - distanceFromNormalAlongLine, options);
   if (line[0].distTo(solution1) < line[0].distTo(solution2)) {
@@ -881,6 +887,10 @@ export function getIntersection(line1Point1, line1Point2, line2Point1, line2Poin
     // TODO: Handle these errors better
     console.error("Intersection error:", {Px, Py});
     return null
+  }
+
+  if (options && options.name && !options.generatedInstructions) {
+    options.generatedInstructions = `Establish point ${options.name} at the intersection of ${line1Point1.name}-${line1Point2.name} and ${line2Point1.name}-${line2Point2.name}`;
   }
   return new Point([Px, Py], options);
 }
