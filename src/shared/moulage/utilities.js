@@ -112,6 +112,7 @@ export function drawPointLabel(context, point, label, pattern) {
   let {labelColor = "#000", labelDefaultDir = "W", labelFont = '18pt serif'} = pattern || {};
 
   let dir = point.labelDir || labelDefaultDir;
+  let pointPadding = (point.size || 4) / 2 + 8;
 
   context.font = labelFont;
   context.textAlign = 'center';
@@ -121,16 +122,16 @@ export function drawPointLabel(context, point, label, pattern) {
   textHeight = textMetrics.actualBoundingBoxAscent + textMetrics.actualBoundingBoxDescent;
 
   if (dir.indexOf("E") > -1) {
-    offsetRight = textWidth;
+    offsetRight = textWidth / 2 + pointPadding;
   }
   if (dir.indexOf("W") > -1) {
-    offsetRight = - textWidth;
+    offsetRight = - (textWidth / 2 + pointPadding);
   }
   if (dir.indexOf("S") > -1) {
-    offsetBottom = textHeight;
+    offsetBottom = textHeight / 2 + pointPadding;
   }
   if (dir.indexOf("N") > -1) {
-    offsetBottom = - textHeight;
+    offsetBottom = - (textHeight / 2 + pointPadding);
   }
   const offsetPoint = point.addvCanvas([offsetRight, offsetBottom])
 
