@@ -7,6 +7,7 @@ export class Pattern {
     this.name = values.name;
     this.title = values.title;
     this.description = values.description;
+    this.isMasculine = values.isMasculine;
     this.patternPieces = {}
     this.steps = [];
   }
@@ -41,7 +42,7 @@ export class Pattern {
       }
       let actionPatternPiece = patternPieces[action.patternPieceName];
 
-      if (action.type === 'point') {
+      if (action.type === 'Point') {
         action.labelDir = action.labelDir || actionPatternPiece.labelDefaultDir;
         actionPatternPiece.points[action.name] = action;
       } else {
@@ -68,7 +69,7 @@ export class Pattern {
             },
           );
         }
-        if (action.type === 'point') {
+        if (action.type === 'Point') {
           displayPieces[action.patternPieceName].points[action.name] = action;
         } else {
           displayPieces[action.patternPieceName].curves[action.name] = action;
@@ -82,7 +83,7 @@ export class Pattern {
     });
 
     this.steps[step-1].actions.forEach(action => {
-      if (action.type === 'point') {
+      if (action.type === 'Point') {
         displayPieces._currentStep.points[action.name] = new Point(action, {displayCurrentStep: true});
       } else {
         displayPieces._currentStep.curves[action.name] = new Curve(action, {displayCurrentStep: true});
@@ -108,7 +109,7 @@ export class Point {
   // Really a vector class, but try to ignore that
 
   constructor(point, options) {
-    this.type = 'point';
+    this.type = 'Point';
     if (Array.isArray(point)) {
       this.values = point;
     } else {
@@ -128,6 +129,8 @@ export class Point {
     this.labelDir = this.options.labelDir || point.labelDir;
     this.labelDefaultDir = this.options.labelDefaultDir || point.labelDefaultDir;
     this.patternPieceName = this.options.patternPieceName || point.patternPieceName;
+    this.generatedInstructions = this.options.generatedInstructions;
+    this.instructions = this.options.instructions || point.instructions;
     this.stepId = point.stepId;
 
     if (this.displayCurrentStep) {
@@ -227,11 +230,19 @@ export class Point {
 
   squareRight(distance, options) {
     let values = [this.values[0]+distance, this.values[1]];
+    if (options && options.name && !options.generatedInstructions) {
+      let direction = (distance > 0) ? 'right' : 'left';
+      options.generatedInstructions = `Square ${direction} ${Math.abs(distance)} inches from ${this.name} to establish point ${options.name}`;
+    }
     return new Point(values, options);
   }
 
   squareUp(distance, options) {
     let values = [this.values[0], this.values[1]-distance];
+    if (options && options.name && !options.generatedInstructions) {
+      let direction = (distance > 0) ? 'up' : 'down';
+      options.generatedInstructions = `Square ${direction} ${Math.abs(distance)} inches from ${this.name} to establish point ${options.name}`;
+    }
     return new Point(values, options);
   }
 
@@ -252,6 +263,10 @@ export class Point {
   toAngleDistance(angle, distance, options) {
     let y = - Math.sin(angle) * distance + this.y;
     let x = Math.cos(angle) * distance + this.x;
+    if (options && options.name && !options.generatedInstructions) {
+      let degrees = angle/Math.PI*180;
+      options.generatedInstructions = `Establish point ${options.name} ${distance} inches from ${this.name} at a ${degrees}° angle`;
+    }
     return new Point([x, y], options);
   }
 }
