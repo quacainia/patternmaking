@@ -16,9 +16,11 @@
     {{pattern.description}}
     </p>
 
-    <p v-if="isComplete">
-      Congratulations! Your draft is complete! The next steps will be sewing it together and fitting.
-    </p>
+    <div v-if="isComplete">
+      <p>Congratulations! You've completed the instructions!* The next steps will be sewing it together and fitting.</p>
+
+      <p><i>* The pattern is currently a few steps from complete, check back later for the full draft.</i></p>
+    </div>
 
     <div v-if="stepId">
       <h4 class="title">

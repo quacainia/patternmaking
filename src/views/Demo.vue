@@ -22,7 +22,7 @@
     </p>
 
     <p>
-      <strong>The Current Product</strong> will guide you through drafting a moulage for me, as it has not been tested yet with custom measurements.
+      <strong>The Current Product</strong> will guide you through drafting a moulage for me, as it has not been tested yet with custom measurements. The next step will be instructions for slopers (bodice, arm, pant), for custom measurements.
     </p>
   </div>
 </template>
