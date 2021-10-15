@@ -11,6 +11,7 @@
       <router-view/>
     </Tile>
     <Dots />
+    <Notice />
   </div>
 </template>
 
@@ -20,6 +21,7 @@ import { mapGetters, mapMutations } from 'vuex';
 
 // @ is an alias to /src
 import Dots from '@/components/Dots.vue';
+import Notice from '@/components/Notice.vue';
 import Tile from '@/components/Tile.vue';
 import Title from '@/components/Title.vue';
 import Workspace from '@/components/Workspace.vue';
@@ -34,6 +36,7 @@ export default {
   },
   components: {
     Dots,
+    Notice,
     Tile,
     Title,
     Workspace,
