@@ -919,10 +919,25 @@ export function drawFrontDraft(pattern) {
     patternPieceName: 'front',
   });
 
-  // 47 U to T
+  // // 47 U to T
   if (front.points.L.y > front.points.S.y) {
-    // TODO: intersect line with a curve
-    //       Intersect LU with E'IS to utilities.get T
+    let initialPoint, line;
+    if (front.points.L.getAngle(front.points.U) > 2.6) {
+      line = new Curve({points: [front.points.L, front.points.L.toAngleDistance(2.6, 1)], name: "a 30° line from L"});
+      initialPoint = front.points.L;
+    } else {
+      line = front.curves.LU;
+      initialPoint = front.points.U;
+    }
+    let points = utilities.getPointOnCurveLineIntersection(front.curves["E'S_guide"], line, pattern.dimensions, {name: 'T'});
+    let T = points[0];
+    pattern.addStep({
+      actions: [
+        T,
+        utilities.getLine(initialPoint, T),
+      ],
+      patternPieceName: 'front',
+    })
   }
 
   // 48 T to T'

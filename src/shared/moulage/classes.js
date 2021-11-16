@@ -189,9 +189,13 @@ export class Point {
     return Math.sqrt(p.values[0]**2 + p.values[1]**2);
   }
 
-  distToLine(line, canvasDimensions) {
-    let pointOnLine = getPointOnLineClosestToPoint(line, this, canvasDimensions);
-    return this.distTo(pointOnLine);
+  distToLine(line) {
+    let lp0 = line.points[0];
+    let lp1 = line.points[1];
+    return (
+        (lp1.values[0] - this.values[0]) * (lp0.values[1] - this.values[1]) -
+        (lp1.values[1] - this.values[1]) * (lp0.values[0] - this.values[0])
+    ) / lp0.distTo(lp1);
   }
 
   div(value) {

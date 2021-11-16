@@ -598,7 +598,7 @@ export function getEulerPerpendicularWithPointInside(endPoint, insidePoints, sta
   let curve, dist, iter=0, scale, t0 = 0;
   let initialAngle = endPoint.angleToLine(startLine, canvasDimensions);
 
-  dist = endPoint.distToLine(startLine, canvasDimensions);
+  dist = endPoint.distToLine(new Curve({points: startLine}), canvasDimensions);
   scale = chooseEulerSize(dist);
   if (isLeftHanded === undefined) {
     isLeftHanded = chooseEulerLeftHanded(insidePoints[0], endPoint, {initialAngle});
@@ -895,6 +895,27 @@ export function getIntersection(line1Point1, line1Point2, line2Point1, line2Poin
   return new Point([Px, Py], options);
 }
 
+export function getIntersectionLines(line1, line2, canvasDimensions, options) {
+  return getIntersection(
+    line1.points[0],
+    line1.points[1],
+    line2.points[0],
+    line2.points[1],
+    canvasDimensions,
+    options
+  );
+}
+
+export function isLineInDirectionOf(point, directionPoint, line, canvasDimensions) {
+  let intersection = getIntersectionLines(new Curve({points: [point, directionPoint]}), line, canvasDimensions);
+  
+  // Lots of weird math to get approximately equal even for 0.01 and 359.99
+  let dpAngle = Math.round(point.getAngle(directionPoint)*180/Math.PI)%360
+  let intsctAngle = Math.round(point.getAngle(intersection)*180/Math.PI)%360;
+
+  return dpAngle == intsctAngle;
+}
+
 export function mitreDart(dartPoint, foldToPoint, dartLegFoldToSide, dartLegFoldAwaySide, canvasDimensions, options) {
 
   let dartAngle, dartMidPoint, foldToPointRotated, mitredMidPoint;
@@ -908,6 +929,83 @@ export function mitreDart(dartPoint, foldToPoint, dartLegFoldToSide, dartLegFold
   mitredMidPoint = getIntersection(dartPoint, dartMidPoint, dartLegFoldAwaySide, foldToPointRotated, canvasDimensions, options);
 
   return mitredMidPoint;
+}
+
+export function getPointOnCurveLineIntersection(curve, line, canvasDimensions, options) {
+  let iter = 0;
+  let test_segments = [
+    [0, curve.points.length-1],
+    [0, Math.floor((curve.points.length - 1)/2), curve.points.length -1]
+  ];
+  let found_lines = [], found_points = [];
+
+  for (;;) {
+    iter++
+    let new_test_segments = [];
+
+    for (let i=0; i<test_segments.length; i++) {
+      if (test_segments[i].length == 2) {
+        let start = test_segments[i][0];
+        let end = test_segments[i][1];
+
+        // Test if points straddle line
+        if (curve.points[start].distToLine(line) > 0 != curve.points[end].distToLine(line) > 0) {
+          if (end - start == 1) {
+            found_lines.push(new Curve({points: [curve.points[start], curve.points[end]]}));
+          } else {
+            let middle = Math.floor((end - start) / 2)+start;
+            new_test_segments.push([start, middle]);
+            new_test_segments.push([middle, end]);
+          }
+        } else {
+          // Test if curve points toward the poin on both sides
+          // TODO: This method could have consequences if curves do loops and stuff
+          let isStartInDirOfLine = isLineInDirectionOf(
+            curve.points[start],
+            curve.points[start+1],
+            line,
+            canvasDimensions
+          );
+          let isEndInDirOfLine = isLineInDirectionOf(
+            curve.points[end],
+            curve.points[end-1],
+            line,
+            canvasDimensions
+          );
+          if (isStartInDirOfLine && isEndInDirOfLine) {
+            let middle = Math.floor((end - start) / 2)+start;
+            new_test_segments.push([start, middle]);
+            new_test_segments.push([middle, end]);
+          }
+        }
+
+      }
+
+    }
+    test_segments = new_test_segments;
+    if (!test_segments.length) {
+      break;
+    }
+    if (iter > 12) {
+      console.error("getPointOnCurveLineIntersection", "MAX ITER");
+      break;
+    }
+  }
+
+  if (options && options.name && !options.generatedInstructions) {
+    options.generatedInstructions = `Establish point ${options.name} at the intersection of ${curve.name} and ${line.name}`;
+  }
+
+  found_lines.forEach((found_line) => {
+    found_points.push(getIntersectionLines(
+      line,
+      found_line,
+      canvasDimensions,
+      options,
+    ));
+  });
+
+  return found_points;
 }
 
 
