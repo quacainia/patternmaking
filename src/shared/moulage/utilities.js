@@ -896,7 +896,6 @@ export function getIntersection(line1Point1, line1Point2, line2Point1, line2Poin
 }
 
 export function getIntersectionLines(line1, line2, canvasDimensions, options) {
-  console.log(options);
   return getIntersection(
     line1.points[0],
     line1.points[1],
@@ -905,6 +904,16 @@ export function getIntersectionLines(line1, line2, canvasDimensions, options) {
     canvasDimensions,
     options
   );
+}
+
+export function isLineInDirectionOf(point, directionPoint, line, canvasDimensions) {
+  let intersection = getIntersectionLines(new Curve({points: [point, directionPoint]}), line, canvasDimensions);
+  
+  // Lots of weird math to get approximately equal even for 0.01 and 359.99
+  let dpAngle = Math.round(point.getAngle(directionPoint)*180/Math.PI)%360
+  let intsctAngle = Math.round(point.getAngle(intersection)*180/Math.PI)%360;
+
+  return dpAngle == intsctAngle;
 }
 
 export function mitreDart(dartPoint, foldToPoint, dartLegFoldToSide, dartLegFoldAwaySide, canvasDimensions, options) {
@@ -923,55 +932,80 @@ export function mitreDart(dartPoint, foldToPoint, dartLegFoldToSide, dartLegFold
 }
 
 export function getPointOnCurveLineIntersection(curve, line, canvasDimensions, options) {
-  let lastPoint = curve.points[0];
-  let lastDist = lastPoint.distToLine(line);
-  let currDist, currIdx, lastDistDiff, lastIdx = 0, ranges=[], points=[];
-  for(let i=0; i<40; i++) {
-    let idx = (i+1)*100;
-    currIdx = (idx >= curve.points.length) ? curve.points.length - 1 : idx;
-    let currPoint = curve.points[currIdx];
-    currDist = currPoint.distToLine(line);
-    let distDiff = currDist - curve.points[currIdx-1];
-    if (currDist === 0) {
-      points.push(currPoint);
+  let iter = 0;
+  let test_segments = [
+    [0, curve.points.length-1],
+    [0, Math.floor((curve.points.length - 1)/2), curve.points.length -1]
+  ];
+  let found_lines = [], found_points = [];
+
+  for (;;) {
+    iter++
+    let new_test_segments = [];
+
+    for (let i=0; i<test_segments.length; i++) {
+      if (test_segments[i].length == 2) {
+        let start = test_segments[i][0];
+        let end = test_segments[i][1];
+
+        // Test if points straddle line
+        if (curve.points[start].distToLine(line) > 0 != curve.points[end].distToLine(line) > 0) {
+          if (end - start == 1) {
+            found_lines.push(new Curve({points: [curve.points[start], curve.points[end]]}));
+          } else {
+            let middle = Math.floor((end - start) / 2)+start;
+            new_test_segments.push([start, middle]);
+            new_test_segments.push([middle, end]);
+          }
+        } else {
+          // Test if curve points toward the poin on both sides
+          // TODO: This method could have consequences if curves do loops and stuff
+          let isStartInDirOfLine = isLineInDirectionOf(
+            curve.points[start],
+            curve.points[start+1],
+            line,
+            canvasDimensions
+          );
+          let isEndInDirOfLine = isLineInDirectionOf(
+            curve.points[end],
+            curve.points[end-1],
+            line,
+            canvasDimensions
+          );
+          if (isStartInDirOfLine && isEndInDirOfLine) {
+            let middle = Math.floor((end - start) / 2)+start;
+            new_test_segments.push([start, middle]);
+            new_test_segments.push([middle, end]);
+          }
+        }
+
+      }
+
     }
-    if (lastDist > 0 != currDist > 0) {
-      ranges.push([lastIdx, currIdx]);
-    }
-    if (lastDistDiff && distDiff > 0 != lastDistDiff > 0) {
-      console.log("foof")
-    }
-    if (currIdx === curve.points.length - 1) {
+    test_segments = new_test_segments;
+    if (!test_segments.length) {
       break;
     }
-    lastDist = currDist;
-    lastDistDiff = distDiff;
-    lastIdx = currIdx;
-    lastPoint = currPoint;
-  }
-  let steps = []
-  for (let i=0; i<ranges.length; i++) {
-    let range = ranges[i];
-    let lastDist = curve.points[range[0]].distToLine(line);
-    for (let curveIdx=range[0]+1; curveIdx<=range[1]; curveIdx++) {
-      currDist = curve.points[curveIdx].distToLine(line);
-      if (lastDist > 0 != currDist > 0) {
-        let rangeCurve = new Curve({
-          points: [curve.points[curveIdx-1], curve.points[curveIdx]]
-        }, {name: 'foo-'+curveIdx});
-        steps.push(rangeCurve);
-        points.push(getIntersectionLines(
-          line,
-          rangeCurve,
-          canvasDimensions,
-          options,
-        ))
-      }
-      lastDist = currDist;
-      lastIdx = currIdx;
+    if (iter > 12) {
+      console.error("getPointOnCurveLineIntersection", "MAX ITER");
+      break;
     }
   }
-  return points;
+
+  if (options && options.name && !options.generatedInstructions) {
+    options.generatedInstructions = `Establish point ${options.name} at the intersection of ${curve.name} and ${line.name}`;
+  }
+
+  found_lines.forEach((found_line) => {
+    found_points.push(getIntersectionLines(
+      line,
+      found_line,
+      canvasDimensions,
+      options,
+    ));
+  });
+
+  return found_points;
 }
 
 
