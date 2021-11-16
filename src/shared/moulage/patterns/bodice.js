@@ -919,11 +919,34 @@ export function drawFrontDraft(pattern) {
     patternPieceName: 'front',
   });
 
-  // 47 U to T
+  // // 47 U to T
   if (front.points.L.y > front.points.S.y) {
     // TODO: intersect line with a curve
     //       Intersect LU with E'IS to utilities.get T
+    let T = utilities.getPointOnCurveLineIntersection(front.curves["E'S_guide"], front.curves.LU, pattern.dimensions, {name: 'T'})
+    T = T[0]
+    T.name="T"
+    pattern.addStep({
+      actions: [
+        T,
+        utilities.getLine(T, front.points.U),
+      ],
+      patternPieceName: 'front',
+    })
   }
+
+  let points = utilities.getPointOnCurveLineIntersection(front.curves["E'S_guide"], utilities.getLine(pattern.patternPieces.back.points["R"], front.points["B"].squareUp(0.27, {'name': 'B*'})), pattern.dimensions, {name: 'T2'}, pattern)
+  console.log(points);
+  points.forEach((point, i) => {
+    point.name = point.name+'-'+i;
+  })
+  pattern.addStep({
+    actions: [
+      ...points,
+      utilities.getLine(pattern.patternPieces.back.points["R"], front.points["B"].squareUp(0.4, {'name': 'B*'}))
+    ],
+    patternPieceName: 'front',
+  })
 
   // 48 T to T'
   // TODO: utilities.get point a distance along a curve

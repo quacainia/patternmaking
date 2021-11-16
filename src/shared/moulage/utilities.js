@@ -598,7 +598,7 @@ export function getEulerPerpendicularWithPointInside(endPoint, insidePoints, sta
   let curve, dist, iter=0, scale, t0 = 0;
   let initialAngle = endPoint.angleToLine(startLine, canvasDimensions);
 
-  dist = endPoint.distToLine(startLine, canvasDimensions);
+  dist = endPoint.distToLine(new Curve({points: startLine}), canvasDimensions);
   scale = chooseEulerSize(dist);
   if (isLeftHanded === undefined) {
     isLeftHanded = chooseEulerLeftHanded(insidePoints[0], endPoint, {initialAngle});
@@ -895,6 +895,18 @@ export function getIntersection(line1Point1, line1Point2, line2Point1, line2Poin
   return new Point([Px, Py], options);
 }
 
+export function getIntersectionLines(line1, line2, canvasDimensions, options) {
+  console.log(options);
+  return getIntersection(
+    line1.points[0],
+    line1.points[1],
+    line2.points[0],
+    line2.points[1],
+    canvasDimensions,
+    options
+  );
+}
+
 export function mitreDart(dartPoint, foldToPoint, dartLegFoldToSide, dartLegFoldAwaySide, canvasDimensions, options) {
 
   let dartAngle, dartMidPoint, foldToPointRotated, mitredMidPoint;
@@ -908,6 +920,58 @@ export function mitreDart(dartPoint, foldToPoint, dartLegFoldToSide, dartLegFold
   mitredMidPoint = getIntersection(dartPoint, dartMidPoint, dartLegFoldAwaySide, foldToPointRotated, canvasDimensions, options);
 
   return mitredMidPoint;
+}
+
+export function getPointOnCurveLineIntersection(curve, line, canvasDimensions, options) {
+  let lastPoint = curve.points[0];
+  let lastDist = lastPoint.distToLine(line);
+  let currDist, currIdx, lastDistDiff, lastIdx = 0, ranges=[], points=[];
+  for(let i=0; i<40; i++) {
+    let idx = (i+1)*100;
+    currIdx = (idx >= curve.points.length) ? curve.points.length - 1 : idx;
+    let currPoint = curve.points[currIdx];
+    currDist = currPoint.distToLine(line);
+    let distDiff = currDist - curve.points[currIdx-1];
+    if (currDist === 0) {
+      points.push(currPoint);
+    }
+    if (lastDist > 0 != currDist > 0) {
+      ranges.push([lastIdx, currIdx]);
+    }
+    if (lastDistDiff && distDiff > 0 != lastDistDiff > 0) {
+      console.log("foof")
+    }
+    if (currIdx === curve.points.length - 1) {
+      break;
+    }
+    lastDist = currDist;
+    lastDistDiff = distDiff;
+    lastIdx = currIdx;
+    lastPoint = currPoint;
+  }
+  let steps = []
+  for (let i=0; i<ranges.length; i++) {
+    let range = ranges[i];
+    let lastDist = curve.points[range[0]].distToLine(line);
+    for (let curveIdx=range[0]+1; curveIdx<=range[1]; curveIdx++) {
+      currDist = curve.points[curveIdx].distToLine(line);
+      if (lastDist > 0 != currDist > 0) {
+        let rangeCurve = new Curve({
+          points: [curve.points[curveIdx-1], curve.points[curveIdx]]
+        }, {name: 'foo-'+curveIdx});
+        steps.push(rangeCurve);
+        points.push(getIntersectionLines(
+          line,
+          rangeCurve,
+          canvasDimensions,
+          options,
+        ))
+      }
+      lastDist = currDist;
+      lastIdx = currIdx;
+    }
+  }
+  return points;
 }
 
 
