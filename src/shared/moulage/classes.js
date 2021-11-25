@@ -84,11 +84,18 @@ export class Pattern {
 
     this.steps[step-1].actions.forEach(action => {
       if (action.type === 'Point') {
-        displayPieces._currentStep.points[action.name] = new Point(action, {displayCurrentStep: true});
+        displayPieces._currentStep.points[action.name] = new Point(action, {styleName: 'currentStep'});
       } else {
-        displayPieces._currentStep.curves[action.name] = new Curve(action, {displayCurrentStep: true});
+        displayPieces._currentStep.curves[action.name] = new Curve(action, {styleName: (action.options.styleName || 'final') + 'Current'});
       }
     });
+    (this.steps[step-1].highlights || []).forEach((action, idx) => {
+      if (action.type === 'Point') {
+        displayPieces._currentStep.points[`highlight_${idx}`] = new Point(action, {styleName: 'highlight'});
+      } else {
+        displayPieces._currentStep.curves[`highlight_${idx}`] = new Curve(action, {styleName: 'highlight'});
+      }
+    })
 
     return displayPieces;
   }
@@ -124,7 +131,7 @@ export class Point {
 
     this.options = Object.assign({}, this.values.options, options);
     this.name = this.options.name || point.name;
-    this.displayCurrentStep = this.options.displayCurrentStep || point.displayCurrentStep;
+    this.styleName = this.options.styleName || point.styleName;
     this.isGuide = this.options.isGuide || point.isGuide;
     this.labelDir = this.options.labelDir || point.labelDir;
     this.labelDefaultDir = this.options.labelDefaultDir || point.labelDefaultDir;
@@ -133,9 +140,14 @@ export class Point {
     this.instructions = this.options.instructions || point.instructions;
     this.stepId = point.stepId;
 
-    if (this.displayCurrentStep) {
-      this.color = '#606';
-      this.size = 8;
+    switch(this.styleName) {
+      case 'currentStep':
+        this.color = '#606';
+        this.size = 8;
+        break;
+      case 'highlight':
+        this.color = '#4DF';
+        this.size = 8;
     }
   }
 
@@ -286,13 +298,16 @@ export class Curve {
     this.curveLength = values.curveLength || null;
 
     let curveStyle = {};
-    let styleName = (this.options.displayCurrentStep) ? (this.options.styleName || 'final') + 'Current' : this.options.styleName;
+    let styleName = this.options.styleName;
     switch(styleName) {
       case 'guide':
         curveStyle = {color: "#555", lineWidth: 1};
         break;
       case 'guideCurrent':
         curveStyle = {color: "#F7F", lineWidth: 4};
+        break;
+      case 'highlight':
+        curveStyle = {color: "#4DF", lineWidth: 7};
         break;
       case 'temporary':
         curveStyle = {color: "#555", lineWidth: 1, dashed: true};

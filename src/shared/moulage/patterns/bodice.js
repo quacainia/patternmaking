@@ -603,19 +603,22 @@ export function drawFrontDraft(pattern) {
   });
 
   // 18 F to F'
-  let shoulderDartWidth = (pattern.isMasculine) ? 0 : 1/2;
-  let FPrime = utilities.getPointAlongLine(front.points.F, front.points.E, shoulderDartWidth, {name: "F'", labelDir: 'W', doNotDraw: pattern.isMasculine});
-  pattern.addStep({
-    actions: [
-      FPrime,
-    ],
-    patternPieceName: 'front',
-  });
+  if (!pattern.isMasculine) {
+    let shoulderDartWidth = 1/2;
+    let FPrime = utilities.getPointAlongLine(front.points.F, front.points.E, shoulderDartWidth, {name: "F'", labelDir: 'W', doNotDraw: pattern.isMasculine});
+    pattern.addStep({
+      actions: [
+        FPrime,
+      ],
+      patternPieceName: 'front',
+    });
+  }
 
   // 19 F' to E'
+  let step19StartPoint = (pattern.isMasculine) ? front.points.F : front.points["F'"];
   pattern.addStep({
     actions: [
-      utilities.getPointAlongLine(front.points["F'"], front.points.E, shoulder/2, {name: "E'"}),
+      utilities.getPointAlongLine(step19StartPoint, front.points.E, shoulder/2, {name: "E'"}),
     ],
     patternPieceName: 'front',
   });
@@ -698,15 +701,14 @@ export function drawFrontDraft(pattern) {
 
   // 29 F to L
   // 30 F' to L
+  let step30Actions = [utilities.getLine(front.points.F, front.points.L, {styleName: 'guide'})]
   if (!pattern.isMasculine) {
-    pattern.addStep({
-      actions: [
-        utilities.getLine(front.points.F, front.points.L, {styleName: 'guide'}),
-        utilities.getLine(front.points["F'"], front.points.L, {styleName: 'guide'}),
-      ],
-      patternPieceName: 'front',
-    });
+    step30Actions.push(utilities.getLine(front.points["F'"], front.points.L, {styleName: 'guide'}));
   }
+  pattern.addStep({
+    actions: step30Actions,
+    patternPieceName: 'front',
+  });
 
   // 31 K to N
   let waistDartLength = 3 + 1/2;
@@ -920,28 +922,37 @@ export function drawFrontDraft(pattern) {
   });
 
   // // 47 U to T
-  if (front.points.L.y > front.points.S.y) {
-    let initialPoint, line;
-    if (front.points.L.getAngle(front.points.U) > 2.6) {
-      line = new Curve({points: [front.points.L, front.points.L.toAngleDistance(2.6, 1)], name: "a 30° line from L"});
-      initialPoint = front.points.L;
-    } else {
-      line = front.curves.LU;
-      initialPoint = front.points.U;
-    }
-    let points = utilities.getPointOnCurveLineIntersection(front.curves["E'S_guide"], line, pattern.dimensions, {name: 'T'});
-    let T = points[0];
-    pattern.addStep({
-      actions: [
-        T,
-        utilities.getLine(initialPoint, T),
-      ],
-      patternPieceName: 'front',
-    })
+  let initialPoint, line;
+  if (front.points.L.getAngle(front.points.U) > 2.6) {
+    line = new Curve({points: [front.points.L, front.points.L.toAngleDistance(2.6, 1)], name: "a 30° line from L"});
+    initialPoint = front.points.L;
+  } else {
+    line = front.curves.LU;
+    initialPoint = front.points.U;
   }
+  let points = utilities.getPointOnCurveLineIntersection(front.curves["E'S_guide"], line, pattern.dimensions, {name: 'T'});
+  let T = points[0];
+  pattern.addStep({
+    actions: [
+      T,
+      utilities.getLine(initialPoint, T, {styleName: 'guide'}),
+    ],
+    patternPieceName: 'front',
+  });
 
   // 48 T to T'
-  // TODO: utilities.get point a distance along a curve
+  let armholeDartSize = 0.5;
+  let {pointAlongCurve, curveToPoint} = utilities.getPointAlongCurve(front.points.T, front.curves["E'S_guide"], armholeDartSize, true, {name: "T'"});
+  pattern.addStep({
+    actions: [
+      pointAlongCurve,
+      utilities.getLine(front.points.L, pointAlongCurve, {styleName: 'guide'}),
+    ],
+    highlights: [
+      curveToPoint,
+    ],
+    patternPieceName: 'front',
+  });
 }
 
 export function create() {
