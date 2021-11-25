@@ -1008,6 +1008,73 @@ export function getPointOnCurveLineIntersection(curve, line, canvasDimensions, o
   return found_points;
 }
 
+export function getPointAlongCurve(point, curve, distanceGoal, useReverseDirection, options) {
+  let curveSegment, newPoint;
+  let distanceSum = 0;
+  let curveFromPoint = getCurveFromMidpoint(curve, point, useReverseDirection);
+  if (options && options.name && !options.generatedInstructions) {
+    options.generatedInstructions = `Establish point ${options.name} ${distanceGoal} inches from ${point.name} along ${curve.name}`;
+  }
+  
+  for(let i=1; i<curveFromPoint.points.length; i++) {
+    let point1 = curveFromPoint.points[i-1];
+    let point2 = curveFromPoint.points[i];
+    let pointsDist = point1.distTo(point2);
+    if (distanceSum + pointsDist > distanceGoal) {
+      newPoint = getPointAlongLine(point1, point2, distanceGoal - distanceSum, options);
+      curveSegment = new Curve({'points': [...curveFromPoint.points.slice(0, i), newPoint]})
+      break;
+    } else {
+      distanceSum += pointsDist;
+    }
+  }
+  return {
+    'pointAlongCurve': newPoint,
+    'curveToPoint': curveSegment,
+  }
+}
+
+export function getCurveFromMidpoint(curve, point, useReverseDirection) {
+  let min = 1e-5;
+  let minPointIdx = -1;
+  let newCurve;
+  for (let i=1; i<curve.points.length; i++) {
+    let p1 = curve.points[i-1];
+    let p2 = curve.points[i];
+    let YXdiff = (p1.y - p2.y) * point.x + p1.y * (p1.x - p2.x) - (p1.y - p2.y) * p1.x;
+    let pointYXdiff = point.y * (p1.x - p2.x);
+    let diff = Math.abs(YXdiff - pointYXdiff);
+    if (diff < min) {
+      if (
+        (
+          (p2.x - point.x < 0) != (p1.x - point.x < 0)
+        ) && (
+          (p2.y - point.y < 0) != (p1.y - point.y < 0)
+        )
+      ) {
+        min = diff;
+        minPointIdx = i;
+      }
+    }
+  }
+  if (minPointIdx < 0) {
+    // TODO: Handle this error better
+    console.error("Failed to find midpoint on curve.");
+    return;
+  }
+
+  if (useReverseDirection) {
+    let pointsSlice = curve.points.slice(0, minPointIdx).reverse();
+    let newPoints = [point, ...pointsSlice];
+    newCurve = new Curve({'points': newPoints});
+  } else {
+    let pointsSlice = curve.points.slice(minPointIdx);
+    let newPoints = [point, ...pointsSlice];
+    newCurve = new Curve({'points': newPoints});
+  }
+  return newCurve;
+}
+
 
 // console.log(EULER_SCALE_SMALL, getMaxEulerLength(EULER_SCALE_SMALL));
 // console.log(EULER_SCALE_STD, getMaxEulerLength(EULER_SCALE_STD));
