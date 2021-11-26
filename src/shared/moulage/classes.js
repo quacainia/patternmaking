@@ -44,9 +44,20 @@ export class Pattern {
 
       if (action.type === 'Point') {
         action.labelDir = action.labelDir || actionPatternPiece.labelDefaultDir;
-        actionPatternPiece.points[action.name] = action;
-      } else {
-        actionPatternPiece.curves[action.name] = action;
+      }
+      actionPatternPiece[action.typeContainer][action.name] = action;
+    });
+
+    (step.deleteActions || []).forEach(action => {
+      if (!action.name) {
+        console.error('Pattern step action does not have a name.', step, action);
+        throw 'Pattern step action does not have a name.';
+        // TODO: Handle gracefully.
+      }
+
+      let actionPatternPiece = patternPieces[action.patternPieceName];
+      if (actionPatternPiece && actionPatternPiece[action.typeContainer]) {
+        delete actionPatternPiece[action.typeContainer][action.name];
       }
     });
   }
@@ -69,11 +80,11 @@ export class Pattern {
             },
           );
         }
-        if (action.type === 'Point') {
-          displayPieces[action.patternPieceName].points[action.name] = action;
-        } else {
-          displayPieces[action.patternPieceName].curves[action.name] = action;
-        }
+        displayPieces[action.patternPieceName][action.typeContainer][action.name] = action;
+      });
+
+      (step.deleteActions || []).forEach((action) => {
+        delete displayPieces[action.patternPieceName][action.typeContainer][action.name];
       });
     });
 
@@ -83,6 +94,7 @@ export class Pattern {
     });
 
     this.steps[step-1].actions.forEach(action => {
+      delete displayPieces[action.patternPieceName][action.typeContainer][action.name];
       if (action.type === 'Point') {
         displayPieces._currentStep.points[action.name] = new Point(action, {styleName: 'currentStep'});
       } else {
@@ -90,12 +102,16 @@ export class Pattern {
       }
     });
     (this.steps[step-1].highlights || []).forEach((action, idx) => {
+      let name = action.name || `highlight_${idx}`
       if (action.type === 'Point') {
-        displayPieces._currentStep.points[`highlight_${idx}`] = new Point(action, {styleName: 'highlight'});
+        displayPieces._currentStep.points[name] = new Point(action, {styleName: 'highlight'});
       } else {
-        displayPieces._currentStep.curves[`highlight_${idx}`] = new Curve(action, {styleName: 'highlight'});
+        displayPieces._currentStep.curves[name] = new Curve(action, {styleName: 'highlight'});
       }
-    })
+    });
+    (this.steps[step-1].deleteActions || []).forEach((action) => {
+      delete displayPieces[action.patternPieceName][action.typeContainer][action.name];
+    });
 
     return displayPieces;
   }
@@ -114,9 +130,10 @@ export class PatternPiece {
 
 export class Point {
   // Really a vector class, but try to ignore that
+  type = 'Point'
+  typeContainer = 'points'
 
   constructor(point, options) {
-    this.type = 'Point';
     if (Array.isArray(point)) {
       this.values = point;
     } else {
@@ -289,9 +306,10 @@ export class Point {
 
 export class Curve {
   // A long list of points to display as a curve
+  type = 'Curve';
+  typeContainer = 'curves'
 
   constructor(values, options) {
-    this.type = 'curve';
     this.points = values.points || [];
     this.options = Object.assign({}, values.options, options);
 
@@ -348,6 +366,8 @@ export class Curve {
     this.startPoint = this.points[0];
     this.t0 = this.options.t0;
     this.tMax = values.tMax;
+    this.generatedInstructions = this.options.generatedInstructions;
+    this.instructions = this.options.instructions || this.instructions;
   }
 
   flip(index) {
@@ -411,13 +431,15 @@ export class Curve {
   }
 
   rotate(angle, options) {
-    let {origin} = Object.assign(
+    let {origin, getNamedPoints} = Object.assign(
       {},
       {
         origin: this.points[0],
+        getNamedPoints: false,
       },
       options
     );
+    let namedPoints = [];
 
     let newMutations = [...this.mutations];
     newMutations.push({
@@ -426,15 +448,31 @@ export class Curve {
       angle,
     });
 
-    let newPoints = this.points.map(point => point.rotate(origin, angle));
-    return new Curve(Object.assign(
+    let newPoints = this.points.map(point => {
+      let newPoint = point.rotate(origin, angle, point.options);
+      if (getNamedPoints && point.name) {
+        namedPoints.push(newPoint)
+      }
+      return newPoint;
+    });
+    
+    let newCurve = new Curve(Object.assign(
       {},
       this,
       {
+        ...this.options,
         points: newPoints,
         rotationAngle: (this.rotationAngle || 0) + angle,
         mutations: newMutations,
       }
     ));
+
+    if (getNamedPoints) {
+      return {
+        newCurve,
+        namedPoints
+      }
+    }
+    return newCurve;
   }
 }

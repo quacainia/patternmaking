@@ -28,19 +28,21 @@
       </h4>
       <p>{{step.instructions}}</p>
 
-      <div v-for="(action, index) in step.actions" :key="index">
-        {{action.type}} {{action.name}}
-        <ul>
-          <li v-if="action.instructions">
-            {{action.instructions}}
-          </li>
-          <li v-else-if="action.generatedInstructions">
-            {{action.generatedInstructions}}
-          </li>
-          <li v-else style="color: #963">
-            No auto-genterated instructions for this function yet.
-          </li>
-        </ul>
+      <div v-if="!step.hideActionInstructions">
+        <div v-for="(action, index) in step.actions" :key="index">
+          {{action.type}} {{action.name}}
+          <ul>
+            <li v-if="action.instructions">
+              {{action.instructions}}
+            </li>
+            <li v-else-if="action.generatedInstructions">
+              {{action.generatedInstructions}}
+            </li>
+            <li v-else style="color: #963">
+              No auto-genterated instructions for this function yet.
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
 
