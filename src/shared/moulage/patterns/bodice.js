@@ -603,19 +603,17 @@ export function drawFrontDraft(pattern) {
   });
 
   // 18 F to F'
-  if (!pattern.isMasculine) {
-    let shoulderDartWidth = 1/2;
-    let FPrime = utilities.getPointAlongLine(front.points.F, front.points.E, shoulderDartWidth, {name: "F'", labelDir: 'W', doNotDraw: pattern.isMasculine});
-    pattern.addStep({
-      actions: [
-        FPrime,
-      ],
-      patternPieceName: 'front',
-    });
-  }
+  let shoulderDartWidth = (pattern.isMasculine) ? 0 : 1/2;
+  let FPrime = utilities.getPointAlongLine(front.points.F, front.points.E, shoulderDartWidth, {name: "F'", labelDir: 'W', doNotDraw: pattern.isMasculine});
+  pattern.addStep({
+    actions: [
+      FPrime,
+    ],
+    patternPieceName: 'front',
+  });
 
   // 19 F' to E'
-  let step19StartPoint = (pattern.isMasculine) ? front.points.F : front.points["F'"];
+  let step19StartPoint = front.points["F'"];
   pattern.addStep({
     actions: [
       utilities.getPointAlongLine(step19StartPoint, front.points.E, shoulder/2, {name: "E'"}),
@@ -701,12 +699,11 @@ export function drawFrontDraft(pattern) {
 
   // 29 F to L
   // 30 F' to L
-  let step30Actions = [utilities.getLine(front.points.F, front.points.L, {styleName: 'guide'})]
-  if (!pattern.isMasculine) {
-    step30Actions.push(utilities.getLine(front.points["F'"], front.points.L, {styleName: 'guide'}));
-  }
   pattern.addStep({
-    actions: step30Actions,
+    actions: [
+      utilities.getLine(front.points.F, front.points.L, {styleName: 'guide'}),
+      utilities.getLine(front.points["F'"], front.points.L, {styleName: 'guide'}),
+    ],
     patternPieceName: 'front',
   });
 
@@ -953,6 +950,83 @@ export function drawFrontDraft(pattern) {
     ],
     patternPieceName: 'front',
   });
+
+  // 49 Cut Darts
+  let cutDartsActions = [
+    front.curves.FL,
+    front.curves["F'L"],
+    front.curves["LT'"],
+  ];
+  if (!pattern.isMasculine) {
+    cutDartsActions.push(front.curves["LS'"]);
+  }
+  pattern.addStep({
+    actions: utilities.cutDarts(cutDartsActions),
+    patternPieceName: 'front',
+  });
+
+  // 50 Manipulate T dart into F dart
+  let dartManipulationT = utilities.manipulateDart(
+    front.points.L,
+    [
+      front.curves["LT'"],
+      utilities.getLine(front.points.L, front.points.T),
+    ],
+    [
+      front.curves["F'L"],
+      front.curves.FL
+    ],
+    [
+      front.curves["E'S_guide"],
+      front.curves.CE,
+      front.curves.IU, // TODO: split curves that cross a dart boundary
+    ]
+  )
+  pattern.addStep({
+    actions: [
+      ...dartManipulationT.manipulated,
+      ...dartManipulationT.unmanipulated,
+    ],
+    deleteActions: dartManipulationT.deleted,
+    patternPieceName: 'front',
+    instructions: "Manipulate darts to close TLT' dart into FLF' dart. Tape dart closed.",
+    hideActionInstructions: true,
+  });
+
+  // 51 Manipulate S dart into F dart
+  if (!pattern.isMasculine) {
+    let dartManipulationT = utilities.manipulateDart(
+      front.points.L,
+      [
+        front.curves["LS'"],
+        front.curves["LS''"],
+      ],
+      [
+        front.curves["F'L"],
+        front.curves.FL
+      ],
+      [
+        front.curves["F'E"],
+        front.curves["T'E'"],
+        front.curves.LU,
+        front.curves.UT,
+        front.curves.TS,
+        front.curves.LS,
+        front.curves.SO,
+        front.curves.IU,
+      ]
+    )
+    pattern.addStep({
+      actions: [
+        ...dartManipulationT.manipulated,
+        ...dartManipulationT.unmanipulated,
+      ],
+      deleteActions: dartManipulationT.deleted,
+      patternPieceName: 'front',
+      instructions: "Manipulate darts to close S'LS'' dart into FLF' dart. Tape dart closed.",
+      hideActionInstructions: true,
+    });
+  }
 }
 
 export function create() {

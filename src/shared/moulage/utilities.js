@@ -1059,20 +1059,104 @@ export function getCurveFromMidpoint(curve, point, useReverseDirection) {
   }
   if (minPointIdx < 0) {
     // TODO: Handle this error better
-    console.error("Failed to find midpoint on curve.");
+    // console.error("Failed to find midpoint on curve.");
     return;
   }
 
+  let pointsSlice;
   if (useReverseDirection) {
-    let pointsSlice = curve.points.slice(0, minPointIdx).reverse();
-    let newPoints = [point, ...pointsSlice];
-    newCurve = new Curve({'points': newPoints});
+    pointsSlice = curve.points.slice(0, minPointIdx).reverse();
   } else {
-    let pointsSlice = curve.points.slice(minPointIdx);
-    let newPoints = [point, ...pointsSlice];
-    newCurve = new Curve({'points': newPoints});
+    pointsSlice = curve.points.slice(minPointIdx);
   }
+  let newPoints = [point, ...pointsSlice];
+  newCurve = new Curve({...curve, 'points': newPoints, name: undefined, options: {...curve.options, name: undefined}});
   return newCurve;
+}
+
+export function getCurveEndsFromTwoMidpoints(curve, midPoint1, midPoint2) {
+  let curve1 = getCurveFromMidpoint(curve, midPoint1);
+  if (!curve1) {
+    return;
+  }
+  let curve2 = getCurveFromMidpoint(curve, midPoint2);
+  if (!curve2) {
+    return;
+  }
+  if (curve1.points.length > curve2.points.length) {
+    curve1 = getCurveFromMidpoint(curve, midPoint1, true);
+  } else if (curve1.points.length == curve2.points.length) {
+    let dist1 = curve1.points[0].distTo(curve1.points[1]);
+    let dist2 = curve2.points[0].distTo(curve2.points[1]);
+    if (dist1 > dist2) {
+      curve1 = getCurveFromMidpoint(curve, midPoint1, true);
+    } else {
+      curve2 = getCurveFromMidpoint(curve, midPoint2, true);
+    }
+  } else {
+    curve2 = getCurveFromMidpoint(curve, midPoint2, true);
+  }
+
+  return [curve1, curve2];
+}
+
+export function manipulateDart(pointOfRotation, closingDart, openingDart, curvesToManipulate) {
+  // TODO: Find points within the angle of manipulation, and use history
+  //       tracking to determine which curves are associated with those
+  //       points. This would remove the need for curvesToManipulate.
+  //       This unfortunately doesn't cover lines like SU.
+
+  let closeDartManipulatingPoint, closeDartStationaryPoint, openDartManipulatingPoint, openDartStationaryPoint;
+
+  closeDartManipulatingPoint = (closingDart[0].points[0].approx(pointOfRotation)) ? closingDart[0].points[closingDart[0].points.length - 1] : closingDart[0].points[0];
+  closeDartStationaryPoint = (closingDart[1].points[0].approx(pointOfRotation)) ? closingDart[1].points[closingDart[1].points.length - 1] : closingDart[1].points[0];
+  openDartManipulatingPoint = (openingDart[0].points[0].approx(pointOfRotation)) ? openingDart[0].points[openingDart[0].points.length - 1] : openingDart[0].points[0];
+  openDartStationaryPoint = (openingDart[1].points[0].approx(pointOfRotation)) ? openingDart[1].points[openingDart[1].points.length - 1] : openingDart[1].points[0];
+
+  let angleToManPoint = pointOfRotation.getAngle(closeDartManipulatingPoint);
+  let angleToStatPoint = pointOfRotation.getAngle(closeDartStationaryPoint);
+
+  let angleOfManipulation = ((angleToStatPoint - angleToManPoint) + 2*Math.PI) % (2*Math.PI)
+  
+  let manipulatedParts = [];
+  let unmanipulatedParts = [];
+  let deletedCurves = [closingDart[0]];
+
+  curvesToManipulate.push(openingDart[0]);
+
+  curvesToManipulate.forEach(curve => {
+    let curveSegments = getCurveEndsFromTwoMidpoints(curve, closeDartManipulatingPoint, closeDartStationaryPoint);
+    if (!curveSegments) {
+      curveSegments = getCurveEndsFromTwoMidpoints(curve, openDartManipulatingPoint, openDartStationaryPoint);
+    }
+    if (curveSegments) {
+      deletedCurves.push(curve);
+      curveSegments.forEach(curveSeg => {
+        if (curveSeg.points.indexOf(closeDartManipulatingPoint) >= 0 || curveSeg.points.indexOf(openDartManipulatingPoint) >= 0) {
+          curve = curveSeg;
+        } else {
+          unmanipulatedParts.push(curveSeg)
+        }
+      });
+    }
+    let {newCurve, namedPoints} = curve.rotate(angleOfManipulation, {origin: pointOfRotation, getNamedPoints: true});
+    manipulatedParts = manipulatedParts.concat(namedPoints);
+    manipulatedParts.push(newCurve);
+  });
+  return {
+    deleted: deletedCurves,
+    manipulated: manipulatedParts,
+    unmanipulated: unmanipulatedParts,
+  };
+}
+
+export function cutDarts(darts) {
+  return darts.map(dart => new Curve(
+    {...dart, instructions: 'undefined'},
+    {
+      generatedInstructions: `With scissors, cut dart along ${dart.name} to but not through the pivot point.`
+    }
+  ));
 }
 
 
