@@ -603,20 +603,21 @@ export function drawFrontDraft(pattern) {
   });
 
   // 18 F to F'
-  let shoulderDartWidth = (pattern.isMasculine) ? 0 : 1/2;
-  let FPrime = utilities.getPointAlongLine(front.points.F, front.points.E, shoulderDartWidth, {name: "F'", labelDir: 'W', doNotDraw: pattern.isMasculine});
-  pattern.addStep({
-    actions: [
-      FPrime,
-    ],
-    patternPieceName: 'front',
-  });
+  if (!pattern.isMasculine) {
+    let shoulderDartWidth = 1/2;
+    let FPrime = utilities.getPointAlongLine(front.points.F, front.points.E, shoulderDartWidth, {name: "F'", labelDir: 'W', doNotDraw: pattern.isMasculine});
+    pattern.addStep({
+      actions: [
+        FPrime,
+      ],
+      patternPieceName: 'front',
+    });
+  }
 
   // 19 F' to E'
-  let step19StartPoint = front.points["F'"];
   pattern.addStep({
     actions: [
-      utilities.getPointAlongLine(step19StartPoint, front.points.E, shoulder/2, {name: "E'"}),
+      utilities.getPointAlongLine(front.points["F'"], front.points.E, shoulder/2, {name: "E'"}),
     ],
     patternPieceName: 'front',
   });
