@@ -603,16 +603,14 @@ export function drawFrontDraft(pattern) {
   });
 
   // 18 F to F'
-  if (!pattern.isMasculine) {
-    let shoulderDartWidth = 1/2;
-    let FPrime = utilities.getPointAlongLine(front.points.F, front.points.E, shoulderDartWidth, {name: "F'", labelDir: 'W', doNotDraw: pattern.isMasculine});
-    pattern.addStep({
-      actions: [
-        FPrime,
-      ],
-      patternPieceName: 'front',
-    });
-  }
+  let shoulderDartWidth = 1/2;
+  let FPrime = utilities.getPointAlongLine(front.points.F, front.points.E, shoulderDartWidth, {name: "F'", labelDir: 'W', doNotDraw: pattern.isMasculine});
+  pattern.addStep({
+    actions: [
+      FPrime,
+    ],
+    patternPieceName: 'front',
+  });
 
   // 19 F' to E'
   pattern.addStep({
@@ -920,21 +918,22 @@ export function drawFrontDraft(pattern) {
   });
 
   // // 47 U to T
-  let initialPoint, line;
+  let deleteActions47, line;
   if (front.points.L.getAngle(front.points.U) > 2.6) {
     line = new Curve({points: [front.points.L, front.points.L.toAngleDistance(2.6, 1)], name: "a 30° line from L"});
-    initialPoint = front.points.L;
+    deleteActions47 = undefined;
   } else {
     line = front.curves.LU;
-    initialPoint = front.points.U;
+    deleteActions47 = [front.curves.LU];
   }
   let points = utilities.getPointOnCurveLineIntersection(front.curves["E'S_guide"], line, pattern.dimensions, {name: 'T'});
   let T = points[0];
   pattern.addStep({
     actions: [
       T,
-      utilities.getLine(initialPoint, T, {styleName: 'guide'}),
+      utilities.getLine(front.points.L, T, {styleName: 'guide'}),
     ],
+    deleteActions: deleteActions47,
     patternPieceName: 'front',
   });
 
@@ -1009,8 +1008,7 @@ export function drawFrontDraft(pattern) {
       [
         front.curves["F'E"],
         front.curves["T'E'"],
-        front.curves.LU,
-        front.curves.UT,
+        front.curves.LT,
         front.curves.TS,
         front.curves.LS,
         front.curves.SO,
@@ -1029,6 +1027,7 @@ export function drawFrontDraft(pattern) {
     });
   }
 
+  // 52 Fix shoulder level
   let endOfShoulder = 15;
   let rulerCurve = utilities.getEulerPerpendicularWithPointInside(
     front.points["E'"], [front.points.O], [front.points.O, front.points.J], pattern.dimensions, {isLeftHanded: true, styleName: 'guide', maxInsidePointDist: 2}
@@ -1050,14 +1049,13 @@ export function drawFrontDraft(pattern) {
     patternPieceName: 'front',
   });
 
+  // 53 Fix shoulder length
   let dartAngle = front.points.L.getAngle(front.points.F) - front.points.L.getAngle(front.points["F'"]);
   let rotatedEEE = pointEEE.rotate(front.points.L, dartAngle, {name: "E''°", styleName: 'temporary'});
   let rotatedShoulder = front.curves["F'E"].rotate(dartAngle, {origin: front.points.L})
   let rotatedDart = front.curves["F'L"].rotate(dartAngle, {origin: front.points.L});
   let rotatedArmholeTop = front.curves["T'E'"].rotate(dartAngle, {origin: front.points.L})
   let rotatedArmholeBottom = front.curves.TS.rotate(dartAngle, {origin: front.points.L})
-  let rotatedSideTop = front.curves["S'S"].rotate(dartAngle, {origin: front.points.L})
-  // let shoulderDist = front.points.C.distTo(rotatedEPrime);
   let rotatedPointEStar = utilities.getPointAlongLine(front.points.C, rotatedEEE, shoulder, {name: 'E*', labelDir: 'N'})
   let pointFStar = utilities.getIntersectionLines(front.curves.FL, utilities.getLine(front.points.C, rotatedPointEStar), pattern.dimensions, {name: "F*"});
   let dottedLine = utilities.getLine(
@@ -1071,6 +1069,7 @@ export function drawFrontDraft(pattern) {
   )
   let fStarEStar = utilities.getLine(pointFStar, rotatedPointEStar);
   let curveCEStar = utilities.getLine(front.points.C, rotatedPointEStar);
+  console.log(Object.keys(front.curves));
   pattern.addStep({
     actions: [
       curveCEStar,
@@ -1083,7 +1082,6 @@ export function drawFrontDraft(pattern) {
       rotatedDart,
       rotatedArmholeTop,
       rotatedArmholeBottom,
-      rotatedSideTop,
       dottedLine,
     ],
     hide: [
@@ -1098,18 +1096,17 @@ export function drawFrontDraft(pattern) {
       front.points.S,
       front.curves["T'E'"],
       front.curves.TS,
-      front.curves.UT,
-      front.curves.LU,
+      front.curves.LT,
       front.curves.IU,
       front.curves["F'L"],
       front.curves["F'E"],
       front.curves.LS,
-      front.curves["S'S"],
     ],
     patternPieceName: 'front',
     instructions: "Pinch shoulder dart together just for this step.",
   });
 
+  // 53 Cont.
   let fDoublePrime = pointFStar.rotate(front.points.L, - dartAngle, {name: "F''", labelDir: 'N', instructions: "Establish F'' at the intersection of L-F' and the new shoulder line."});
   let fDoublePrimeEStar = fStarEStar.rotate(- dartAngle, {origin: front.points.L, name: "F''E*", hideInstructions: true})
   pattern.addStep({
@@ -1128,6 +1125,17 @@ export function drawFrontDraft(pattern) {
     ],
     patternPieceName: 'front',
     instructions: "Reopen the shoulder dart and lay the paper flat."
+  });
+
+  // 56 Mitre shoulder dart
+  let mitredMidPoint = utilities.mitreDart(front.points.L, front.points.C, front.points["F*"], front.points["F''"], pattern.dimensions, {name: "F**", labelDir: 'N'});
+  pattern.addStep({
+    actions: [
+      mitredMidPoint,
+      utilities.getLine(front.points["F*"], mitredMidPoint),
+      utilities.getLine(mitredMidPoint, front.points["F''"]),
+    ],
+    patternPieceName: 'front',
   });
 }
 
