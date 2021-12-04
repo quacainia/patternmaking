@@ -940,7 +940,7 @@ export function drawFrontDraft(pattern) {
 
   // 48 T to T'
   let armholeDartSize = 0.5;
-  let {pointAlongCurve, curveToPoint} = utilities.getPointAlongCurve(front.points.T, front.curves["E'S_guide"], armholeDartSize, true, {name: "T'"});
+  let {pointAlongCurve, curveToPoint} = utilities.getPointAlongCurve(front.points.T, front.curves["E'S_guide"], armholeDartSize, {name: "T'", useReverseDirection: true});
   pattern.addStep({
     actions: [
       pointAlongCurve,
@@ -1028,6 +1028,107 @@ export function drawFrontDraft(pattern) {
       hideActionInstructions: true,
     });
   }
+
+  let endOfShoulder = 15;
+  let rulerCurve = utilities.getEulerPerpendicularWithPointInside(
+    front.points["E'"], [front.points.O], [front.points.O, front.points.J], pattern.dimensions, {isLeftHanded: true, styleName: 'guide', maxInsidePointDist: 2}
+  );
+  let longRulerCurve = utilities.elongateCurve(rulerCurve, endOfShoulder);
+  let pointEEE = new Point(
+    longRulerCurve.points[longRulerCurve.points.length - 1],
+    {name: "E''", instructions: `Establish point E'' ${endOfShoulder} inches from the waistline along the curved ruler.`}
+  );
+
+  pattern.addStep({
+    actions: [
+      pointEEE,
+    ],
+    highlights: [
+      longRulerCurve,
+    ],
+    instructions: "Curve a flexible ruler from the waistline through point E'.",
+    patternPieceName: 'front',
+  });
+
+  let dartAngle = front.points.L.getAngle(front.points.F) - front.points.L.getAngle(front.points["F'"]);
+  let rotatedEEE = pointEEE.rotate(front.points.L, dartAngle, {name: "E''°", styleName: 'temporary'});
+  let rotatedShoulder = front.curves["F'E"].rotate(dartAngle, {origin: front.points.L})
+  let rotatedDart = front.curves["F'L"].rotate(dartAngle, {origin: front.points.L});
+  let rotatedArmholeTop = front.curves["T'E'"].rotate(dartAngle, {origin: front.points.L})
+  let rotatedArmholeBottom = front.curves.TS.rotate(dartAngle, {origin: front.points.L})
+  let rotatedSideTop = front.curves["S'S"].rotate(dartAngle, {origin: front.points.L})
+  // let shoulderDist = front.points.C.distTo(rotatedEPrime);
+  let rotatedPointEStar = utilities.getPointAlongLine(front.points.C, rotatedEEE, shoulder, {name: 'E*', labelDir: 'N'})
+  let pointFStar = utilities.getIntersectionLines(front.curves.FL, utilities.getLine(front.points.C, rotatedPointEStar), pattern.dimensions, {name: "F*"});
+  let dottedLine = utilities.getLine(
+    front.points.F,
+    utilities.getPointAlongLine(
+      front.points.L,
+      front.points.F,
+      front.points.L.distTo(front.points.F) + 3,
+    ),
+    {name: 'dartDottedLine', styleName: 'temporary'},
+  )
+  let fStarEStar = utilities.getLine(pointFStar, rotatedPointEStar);
+  let curveCEStar = utilities.getLine(front.points.C, rotatedPointEStar);
+  pattern.addStep({
+    actions: [
+      curveCEStar,
+      rotatedPointEStar,
+      pointFStar,
+    ],
+    highlights: [
+      rotatedEEE,
+      rotatedShoulder,
+      rotatedDart,
+      rotatedArmholeTop,
+      rotatedArmholeBottom,
+      rotatedSideTop,
+      dottedLine,
+    ],
+    hide: [
+      front.points.E,
+      front.points["E'"],
+      front.points["E''"],
+      front.points["F'"],
+      front.points["T'"],
+      front.points.I,
+      front.points.U,
+      front.points.T,
+      front.points.S,
+      front.curves["T'E'"],
+      front.curves.TS,
+      front.curves.UT,
+      front.curves.LU,
+      front.curves.IU,
+      front.curves["F'L"],
+      front.curves["F'E"],
+      front.curves.LS,
+      front.curves["S'S"],
+    ],
+    patternPieceName: 'front',
+    instructions: "Pinch shoulder dart together just for this step.",
+  });
+
+  let fDoublePrime = pointFStar.rotate(front.points.L, - dartAngle, {name: "F''", labelDir: 'N', instructions: "Establish F'' at the intersection of L-F' and the new shoulder line."});
+  let fDoublePrimeEStar = fStarEStar.rotate(- dartAngle, {origin: front.points.L, name: "F''E*", hideInstructions: true})
+  pattern.addStep({
+    actions: [
+      rotatedPointEStar.rotate(front.points.L, - dartAngle, {name: "E*", labelDir: 'NW', hideInstructions: true}),
+      utilities.getLine(front.points.C, front.points["F*"], {hideInstructions: true}),
+      fDoublePrime,
+      fDoublePrimeEStar,
+      utilities.getLine(front.points.L, fDoublePrime),
+      utilities.getLine(front.points.L, front.points["F*"]),
+    ],
+    deleteActions: [
+      curveCEStar,
+      front.curves.FL,
+      front.curves["F'L"],
+    ],
+    patternPieceName: 'front',
+    instructions: "Reopen the shoulder dart and lay the paper flat."
+  });
 }
 
 export function create() {

@@ -67,19 +67,19 @@ export class Pattern {
 
     let displayPieces = {};
 
+    Object.keys(this.patternPieces).forEach(key => {
+      displayPieces[key] = Object.assign(
+        {},
+        this.patternPieces[key],
+        {
+          curves: {},
+          points: {},
+        },
+      );
+    })
+
     stepsSlice.forEach(step => {
       step.actions.forEach(action => {
-        if (!displayPieces[action.patternPieceName]) {
-          // This is for keeping styling of the pattern piece
-          displayPieces[action.patternPieceName] = Object.assign(
-            {},
-            this.patternPieces[action.patternPieceName],
-            {
-              curves: {},
-              points: {},
-            },
-          );
-        }
         displayPieces[action.patternPieceName][action.typeContainer][action.name] = action;
       });
 
@@ -94,22 +94,38 @@ export class Pattern {
     });
 
     this.steps[step-1].actions.forEach(action => {
-      delete displayPieces[action.patternPieceName][action.typeContainer][action.name];
-      if (action.type === 'Point') {
-        displayPieces._currentStep.points[action.name] = new Point(action, {styleName: 'currentStep'});
+      if (action.hideInstructions) {
+        displayPieces[action.patternPieceName][action.typeContainer][action.name] = action;
       } else {
-        displayPieces._currentStep.curves[action.name] = new Curve(action, {styleName: (action.options.styleName || 'final') + 'Current'});
+        let patternPiece = displayPieces[action.patternPieceName];
+        if (patternPiece) {
+          delete patternPiece[action.typeContainer][action.name];
+        }
+        if (action.type === 'Point') {
+          displayPieces._currentStep.points[action.name] = new Point(action, {styleName: 'currentStep'});
+        } else {
+          displayPieces._currentStep.curves[action.name] = new Curve(action, {styleName: (action.options.styleName || 'final') + 'Current'});
+        }
       }
     });
     (this.steps[step-1].highlights || []).forEach((action, idx) => {
       let name = action.name || `highlight_${idx}`
       if (action.type === 'Point') {
-        displayPieces._currentStep.points[name] = new Point(action, {styleName: 'highlight'});
+        displayPieces._currentStep.points[name] = new Point(action, {styleName: action.styleName || 'highlight'});
       } else {
-        displayPieces._currentStep.curves[name] = new Curve(action, {styleName: 'highlight'});
+        let styleName = action.options.styleName;
+        if (styleName && styleName != 'final') {
+          styleName += 'Highlight';
+        } else {
+          styleName = 'highlight';
+        }
+        displayPieces._currentStep.curves[name] = new Curve(action, {styleName});
       }
     });
     (this.steps[step-1].deleteActions || []).forEach((action) => {
+      delete displayPieces[action.patternPieceName][action.typeContainer][action.name];
+    });
+    (this.steps[step-1].hide || []).forEach(action => {
       delete displayPieces[action.patternPieceName][action.typeContainer][action.name];
     });
 
@@ -156,6 +172,7 @@ export class Point {
     this.generatedInstructions = this.options.generatedInstructions;
     this.instructions = this.options.instructions || point.instructions;
     this.stepId = point.stepId;
+    this.hideInstructions = this.options.hideInstructions ?? point.hideInstructions;
 
     switch(this.styleName) {
       case 'currentStep':
@@ -165,6 +182,13 @@ export class Point {
       case 'highlight':
         this.color = '#4DF';
         this.size = 8;
+        break;
+      case 'temporary':
+        this.color = '#4DF';
+        this.size = 4;
+        this.labelFont = '18pt serif';
+        this.labelColor = '#279';
+        break;
     }
   }
 
@@ -324,6 +348,9 @@ export class Curve {
       case 'guideCurrent':
         curveStyle = {color: "#F7F", lineWidth: 4};
         break;
+      case 'guideHighlight':
+        curveStyle = {color: "#4DF", lineWidth: 4};
+        break;
       case 'highlight':
         curveStyle = {color: "#4DF", lineWidth: 7};
         break;
@@ -332,6 +359,9 @@ export class Curve {
         break;
       case 'temporaryCurrent':
         curveStyle = {color: "#F7F", lineWidth: 4, dashed: true};
+        break;
+      case 'temporaryHighlight':
+        curveStyle = {color: "#4DF", lineWidth: 3, dashed: true};
         break;
       case 'finalCurrent':
         curveStyle = {color: "#F2F", lineWidth: 7};
@@ -363,11 +393,12 @@ export class Curve {
     }
 
     this.scale = this.options.scale;
-    this.startPoint = this.points[0];
+    this.startPoint = this.options.startPoint = this.points[0];
     this.t0 = this.options.t0;
     this.tMax = values.tMax;
     this.generatedInstructions = this.options.generatedInstructions;
     this.instructions = this.options.instructions || this.instructions;
+    this.hideInstructions = this.options.hideInstructions ?? values.hideInstructions ?? false;
   }
 
   flip(index) {
@@ -431,7 +462,7 @@ export class Curve {
   }
 
   rotate(angle, options) {
-    let {origin, getNamedPoints} = Object.assign(
+    options = Object.assign(
       {},
       {
         origin: this.points[0],
@@ -439,6 +470,7 @@ export class Curve {
       },
       options
     );
+    let {origin, getNamedPoints} = options;
     let namedPoints = [];
 
     let newMutations = [...this.mutations];
@@ -464,6 +496,7 @@ export class Curve {
         points: newPoints,
         rotationAngle: (this.rotationAngle || 0) + angle,
         mutations: newMutations,
+        ...options,
       }
     ));
 

@@ -45,10 +45,11 @@ export function drawCurves(context, pattern) {
     let curve = pattern.curves[key]
     if (curve) {
       let curveStyle = curve.curveStyle || {};
+      let lineWidth = curveStyle.lineWidth || 3;
       context.beginPath();
-      context.lineWidth = curveStyle.lineWidth || 3;
+      context.lineWidth = lineWidth;
       context.strokeStyle = curveStyle.color || "#000";
-      context.setLineDash((curveStyle.dashed) ? [5, 5] : []);
+      context.setLineDash((curveStyle.dashed) ? [5, 4*lineWidth] : []);
       curve.points.forEach(point => context.lineTo(...point.canvas()));
       context.stroke();
     } else {
@@ -103,13 +104,14 @@ export function drawPoint(context, point) {
   context.fill();
   context.lineWidth = size*.75;
   context.strokeStyle = "#900";
+  context.setLineDash([]);
   context.stroke();
 }
 
 export function drawPointLabel(context, point, label, pattern) {
   let offsetRight = 0, offsetBottom = 0, textMetrics,
       textWidth, textHeight;
-  let {labelColor = "#000", labelDefaultDir = "W", labelFont = '18pt serif'} = pattern || {};
+  let {labelColor = "#000", labelDefaultDir = "W", labelFont = '18pt serif'} = {...pattern, ...point};
 
   let dir = point.labelDir || labelDefaultDir;
   let pointPadding = (point.size || 4) / 2 + 8;
@@ -319,7 +321,7 @@ export function getEuler(options) {
     // console.error("NaN values in Euler Spiral");
     return new Curve({error: 'containsNaNValues', options});
   }
-  if (endDistance && maxPoints === 1000) {
+  if ((endDistance || endDistanceParallel) && maxPoints === 2000) {
     // console.log('end');
     return new Curve({error: 'ranOutOfPoints', options});
   }
@@ -629,8 +631,8 @@ export function getEulerPerpendicularWithPointInside(endPoint, insidePoints, sta
     initialCurve = getEuler(options);
     lastPoint = initialCurve.points[initialCurve.points.length-1];
 
-    if (!initialCurve.points) {
-      scale *= 1.25;
+    if (!initialCurve.points || !initialCurve.points.length) {
+      scale *= 1.118;
       t0 = 0;
       i = 0;
       iter += 1;
@@ -638,22 +640,22 @@ export function getEulerPerpendicularWithPointInside(endPoint, insidePoints, sta
     }
 
     // move points
-    curve = initialCurve.move(endPoint.subv(lastPoint));
+    let movedCurve = initialCurve.move(endPoint.subv(lastPoint));
 
     // for each point if point is still "inside"
     pointsAreInsideCurve = true;
     minInsidePointsDist = dist*2;
     for (let iInsidePoints = 0; iInsidePoints < insidePoints.length; iInsidePoints++) {
-      let {isPointInCurve, minDist} = getPointInsideCurve(curve.points, insidePoints[iInsidePoints]);
+      let {isPointInCurve, minDist} = getPointInsideCurve(movedCurve.points, insidePoints[iInsidePoints]);
       pointsAreInsideCurve &= isPointInCurve;
       minInsidePointsDist = Math.min(minDist, minInsidePointsDist);
     }
     if (pointsAreInsideCurve) {
       if (minInsidePointsDist < maxInsidePointDist) {
-        let points = curve.points.slice();
+        let points = movedCurve.points.slice();
         points.pop();
         points.push(endPoint);
-        curve = new Curve(Object.assign({}, curve, {points}));
+        curve = new Curve(Object.assign({}, movedCurve, {points}));
         break;
       } else {
         t0 = t0 - (0.5**i);
@@ -662,7 +664,7 @@ export function getEulerPerpendicularWithPointInside(endPoint, insidePoints, sta
       t0 = t0 + (0.5**i);
     }
     if (t0 < 0) {
-      scale *= 1.25;
+      scale *= 1.118;
       t0 = 0;
       i = 0;
       iter += 1;
@@ -1008,7 +1010,8 @@ export function getPointOnCurveLineIntersection(curve, line, canvasDimensions, o
   return found_points;
 }
 
-export function getPointAlongCurve(point, curve, distanceGoal, useReverseDirection, options) {
+export function getPointAlongCurve(point, curve, distanceGoal, options) {
+  let {useReverseDirection} = options;
   let curveSegment, newPoint;
   let distanceSum = 0;
   let curveFromPoint = getCurveFromMidpoint(curve, point, useReverseDirection);
@@ -1046,6 +1049,7 @@ export function getCurveFromMidpoint(curve, point, useReverseDirection) {
     let diff = Math.abs(YXdiff - pointYXdiff);
     if (diff < min) {
       if (
+        diff == 0 ||
         (
           (p2.x - point.x < 0) != (p1.x - point.x < 0)
         ) && (
@@ -1072,6 +1076,10 @@ export function getCurveFromMidpoint(curve, point, useReverseDirection) {
   let newPoints = [point, ...pointsSlice];
   newCurve = new Curve({...curve, 'points': newPoints, name: undefined, options: {...curve.options, name: undefined}});
   return newCurve;
+}
+
+export function elongateCurve(curve, endDistance) {
+  return getEuler({...curve.options, endDistanceParallel: undefined, endDistance});
 }
 
 export function getCurveEndsFromTwoMidpoints(curve, midPoint1, midPoint2) {
