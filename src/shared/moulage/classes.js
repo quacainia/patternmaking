@@ -410,7 +410,9 @@ export class Curve {
       index,
     })
 
-    if (index == 0) {
+    index = index || 0;
+
+    if (!index) {
       angle = this.points[index].getAngle(this.points[index+1]);
     } else if (index === this.points.length-1) {
       angle = this.points[index-1].getAngle(this.points[index]);
@@ -438,6 +440,10 @@ export class Curve {
       {
         points: newPoints,
         mutations: newMutations,
+        options: {
+          ...this.options,
+          isLeftHanded: !this.isLeftHanded,
+        }
       }
     ));
   }
@@ -459,6 +465,26 @@ export class Curve {
         mutations: newMutations,
       }
     ));
+  }
+
+  reverse() {
+    let points = this.points.slice().reverse();
+    let mutations = [...this.mutations];
+    mutations.push({
+      type: "reverse",
+    })
+    return new Curve({
+      ...this,
+      points,
+      options: {
+        ...this.options,
+        t0: this.tMax,
+        tReverse: this.options.tReverse || this.tMax,
+        tMax: this.t0,
+        isLeftHanded: !this.isLeftHanded
+      },
+      mutations
+    });
   }
 
   rotate(angle, options) {

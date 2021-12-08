@@ -1167,6 +1167,41 @@ export function cutDarts(darts) {
   ));
 }
 
+export function copyCurve(curve, anchorPoint, destPoint, options, pointOptions) {
+  let newCurve = curve;
+  options = {...options};
+
+  if (options.reverse) {
+    newCurve = newCurve.reverse();
+  }
+
+  if (options.flip) {
+    newCurve = newCurve.flip();
+  }
+
+  newCurve = newCurve.move(anchorPoint.subv(newCurve.points[0]));
+
+  let directionalCurve = elongateCurve(newCurve, anchorPoint.distTo(destPoint));
+  directionalCurve = directionalCurve.rotate(
+    anchorPoint.getAngle(destPoint)
+    - directionalCurve.points[0].getAngle(directionalCurve.points[directionalCurve.points.length - 1])
+  );
+  newCurve = newCurve.rotate(
+    directionalCurve.points[1].getAngle(directionalCurve.points[2])
+    - newCurve.points[1].getAngle(newCurve.points[2])
+  );
+
+  let lastPoint = new Point(newCurve.points[newCurve.points.length - 1], pointOptions);
+  newCurve.points[0] = anchorPoint;
+  newCurve.points[newCurve.points.length - 1] = lastPoint
+  newCurve = new Curve(newCurve, options);
+
+  return {
+    curve: newCurve,
+    endPoint: lastPoint,
+  }
+}
+
 
 // console.log(EULER_SCALE_SMALL, getMaxEulerLength(EULER_SCALE_SMALL));
 // console.log(EULER_SCALE_STD, getMaxEulerLength(EULER_SCALE_STD));
