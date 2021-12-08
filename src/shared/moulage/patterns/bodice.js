@@ -1069,7 +1069,6 @@ export function drawFrontDraft(pattern) {
   )
   let fStarEStar = utilities.getLine(pointFStar, rotatedPointEStar);
   let curveCEStar = utilities.getLine(front.points.C, rotatedPointEStar);
-  console.log(Object.keys(front.curves));
   pattern.addStep({
     actions: [
       curveCEStar,
@@ -1134,6 +1133,23 @@ export function drawFrontDraft(pattern) {
       mitredMidPoint,
       utilities.getLine(front.points["F*"], mitredMidPoint),
       utilities.getLine(mitredMidPoint, front.points["F''"]),
+    ],
+    patternPieceName: 'front',
+  });
+
+  // 54 Side Curve
+  let sideCurveCalc = utilities.copyCurve(
+    pattern.patternPieces.back.curves["L'O"],
+    front.points.O,
+    front.points.S,
+    {reverse: true, flip: true},
+    {name: 'S**', labelDir: 'W'},
+  );
+  pattern.addStep({
+    actions: [
+      pattern.patternPieces.back.curves["L'O"].reverse(),
+      sideCurveCalc.curve,
+      sideCurveCalc.endPoint,
     ],
     patternPieceName: 'front',
   });
