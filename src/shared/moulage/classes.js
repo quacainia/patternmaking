@@ -35,7 +35,7 @@ export class Pattern {
 
       action.stepId = stepId;
 
-      action.patternPieceName = patternPieceName;
+      action.patternPieceName = action.patternPieceName ?? patternPieceName;
 
       if (action.options && action.options.patternPieceName) {
         action.patternPieceName = action.options.patternPieceName;
@@ -104,7 +104,7 @@ export class Pattern {
         if (action.type === 'Point') {
           displayPieces._currentStep.points[action.name] = new Point(action, {styleName: 'currentStep'});
         } else {
-          displayPieces._currentStep.curves[action.name] = new Curve(action, {styleName: (action.options.styleName || 'final') + 'Current'});
+          displayPieces._currentStep.curves[action.name] = new Curve(action, {styleName: (action.styleName || 'final') + 'Current'});
         }
       }
     });
@@ -113,7 +113,7 @@ export class Pattern {
       if (action.type === 'Point') {
         displayPieces._currentStep.points[name] = new Point(action, {styleName: action.styleName || 'highlight'});
       } else {
-        let styleName = action.options.styleName;
+        let styleName = action.styleName;
         if (styleName && styleName != 'final') {
           styleName += 'Highlight';
         } else {
@@ -148,31 +148,55 @@ export class Point {
   // Really a vector class, but try to ignore that
   type = 'Point'
   typeContainer = 'points'
+  optionKeys = [
+    'color',
+    'generatedInstructions',
+    'hideInstructions',
+    'instructions',
+    'isGuide',
+    'labelDefaultDir',
+    'labelDir',
+    'name',
+    'patternPieceName',
+    'size',
+    'stepId',
+    'styleName',
+  ]
+  newPointClearKeys = {
+    'generatedInstructions': undefined,
+  }
 
   constructor(point, options) {
+
     if (Array.isArray(point)) {
-      this.values = point;
+      point = {values: point};
+      options = {...options};
     } else {
-      this.values = point.values;
+      point = {...point};
+      options = {...point.options, ...options};
     }
+
+    Object.keys(options).forEach(key => {
+      if (this.optionKeys.indexOf(key) < 0) {
+        delete options[key];
+      }
+    });
+
+    point = {
+      values: [0, 0],
+      ...point,
+      ...this.newPointClearKeys,
+      ...options,
+    }
+    Object.keys(point).forEach(key => {
+      if (point[key]) {
+        this[key] = point[key];
+      }
+    });
+    delete this.options;
 
     this.x = this.values[0];
     this.y = this.values[1];
-
-    this.color = point.color;
-    this.size = point.size;
-
-    this.options = Object.assign({}, this.values.options, options);
-    this.name = this.options.name || point.name;
-    this.styleName = this.options.styleName || point.styleName;
-    this.isGuide = this.options.isGuide || point.isGuide;
-    this.labelDir = this.options.labelDir || point.labelDir;
-    this.labelDefaultDir = this.options.labelDefaultDir || point.labelDefaultDir;
-    this.patternPieceName = this.options.patternPieceName || point.patternPieceName;
-    this.generatedInstructions = this.options.generatedInstructions;
-    this.instructions = this.options.instructions || point.instructions;
-    this.stepId = point.stepId;
-    this.hideInstructions = this.options.hideInstructions ?? point.hideInstructions;
 
     switch(this.styleName) {
       case 'currentStep':
@@ -334,13 +358,26 @@ export class Curve {
   typeContainer = 'curves'
 
   constructor(values, options) {
-    this.points = values.points || [];
-    this.options = Object.assign({}, values.options, options);
-
-    this.curveLength = values.curveLength || null;
+    options = {...values.options, ...options};
+    values = {
+      curveLength: null,
+      endDistance: null,
+      hideInstructions: false,
+      isLeftHanded: false,
+      mutations: [],
+      points: [],
+      ...values,
+      ...options,
+    }
+    Object.keys(values).forEach(key => {
+      if (values[key]) {
+        this[key] = values[key];
+      }
+    });
+    delete this.options;
 
     let curveStyle = {};
-    let styleName = this.options.styleName;
+    let styleName = this.styleName;
     switch(styleName) {
       case 'guide':
         curveStyle = {color: "#555", lineWidth: 1};
@@ -371,34 +408,16 @@ export class Curve {
         curveStyle = {color: "#000", lineWidth: 3};
         break;
     }
-    let optionsCurveStyle = (this.options.styleName) ? {} : this.options.curveStyle;
+    let optionsCurveStyle = (this.styleName) ? {} : this.curveStyle;
     this.curveStyle = Object.assign({}, values.curveStyle, curveStyle, optionsCurveStyle);
 
-    this.endDistance = this.options.endDistance || null;
     this.endPoint = this.points[this.points.length - 1];
-    this.error = values.error;
-    this.isLeftHanded = this.options.isLeftHanded || false;
-    this.midPoint = values.midPoint;
-    this.mutations = values.mutations || [];
-
-    this.name = this.options.name || values.name;
     if (!this.name && this.points.length > 1 && this.points[0].name && this.points[this.points.length-1].name) {
       this.name = "" + this.points[0].name + this.points[this.points.length-1].name;
     }
 
-    if (values.rotationAngle !== undefined) {
-      this.rotationAngle = values.rotationAngle;
-    } else {
-      this.rotationAngle = this.options.rotationAngle;
-    }
-
-    this.scale = this.options.scale;
-    this.startPoint = this.options.startPoint = this.points[0];
-    this.t0 = this.options.t0;
-    this.tMax = values.tMax;
-    this.generatedInstructions = this.options.generatedInstructions;
-    this.instructions = this.options.instructions || this.instructions;
-    this.hideInstructions = this.options.hideInstructions ?? values.hideInstructions ?? false;
+    // this.scale = this.options.scale;
+    this.startPoint = this.points && this.points.length && this.points[0];
   }
 
   flip(index) {
@@ -479,7 +498,7 @@ export class Curve {
       options: {
         ...this.options,
         t0: this.tMax,
-        tReverse: this.options.tReverse || this.tMax,
+        tReverse: this.tReverse || this.tMax,
         tMax: this.t0,
         isLeftHanded: !this.isLeftHanded
       },
@@ -507,7 +526,7 @@ export class Curve {
     });
 
     let newPoints = this.points.map(point => {
-      let newPoint = point.rotate(origin, angle, point.options);
+      let newPoint = point.rotate(origin, angle, point);
       if (getNamedPoints && point.name) {
         namedPoints.push(newPoint)
       }
@@ -518,7 +537,6 @@ export class Curve {
       {},
       this,
       {
-        ...this.options,
         points: newPoints,
         rotationAngle: (this.rotationAngle || 0) + angle,
         mutations: newMutations,
