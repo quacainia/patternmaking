@@ -981,7 +981,7 @@ export function drawFrontDraft(pattern) {
       front.curves.CE,
       front.curves.IU, // TODO: split curves that cross a dart boundary
     ]
-  )
+  );
   pattern.addStep({
     actions: [
       ...dartManipulationT.manipulated,
@@ -1033,14 +1033,14 @@ export function drawFrontDraft(pattern) {
     front.points["E'"], [front.points.O], [front.points.O, front.points.J], pattern.dimensions, {isLeftHanded: true, styleName: 'guide', maxInsidePointDist: 2}
   );
   let longRulerCurve = utilities.elongateCurve(rulerCurve, endOfShoulder);
-  let pointEEE = new Point(
+  let pointEDoublePrime = new Point(
     longRulerCurve.points[longRulerCurve.points.length - 1],
     {name: "E''", instructions: `Establish point E'' ${endOfShoulder} inches from the waistline along the curved ruler.`}
   );
 
   pattern.addStep({
     actions: [
-      pointEEE,
+      pointEDoublePrime,
     ],
     highlights: [
       longRulerCurve,
@@ -1049,14 +1049,14 @@ export function drawFrontDraft(pattern) {
     patternPieceName: 'front',
   });
 
-  // 53 Fix shoulder length
+  // 52 Fix shoulder length
   let dartAngle = front.points.L.getAngle(front.points.F) - front.points.L.getAngle(front.points["F'"]);
-  let rotatedEEE = pointEEE.rotate(front.points.L, dartAngle, {name: "E''°", styleName: 'temporary'});
+  let rotatedDoublePrime = pointEDoublePrime.rotate(front.points.L, dartAngle, {name: "E''°", styleName: 'temporary'});
   let rotatedShoulder = front.curves["F'E"].rotate(dartAngle, {origin: front.points.L})
   let rotatedDart = front.curves["F'L"].rotate(dartAngle, {origin: front.points.L});
   let rotatedArmholeTop = front.curves["T'E'"].rotate(dartAngle, {origin: front.points.L})
   let rotatedArmholeBottom = front.curves.TS.rotate(dartAngle, {origin: front.points.L})
-  let rotatedPointEStar = utilities.getPointAlongLine(front.points.C, rotatedEEE, shoulder, {name: 'E*', labelDir: 'N'})
+  let rotatedPointEStar = utilities.getPointAlongLine(front.points.C, rotatedDoublePrime, shoulder, {name: 'E*', labelDir: 'N'})
   let pointFStar = utilities.getIntersectionLines(front.curves.FL, utilities.getLine(front.points.C, rotatedPointEStar), pattern.dimensions, {name: "F*"});
   let dottedLine = utilities.getLine(
     front.points.F,
@@ -1076,7 +1076,7 @@ export function drawFrontDraft(pattern) {
       pointFStar,
     ],
     highlights: [
-      rotatedEEE,
+      rotatedDoublePrime,
       rotatedShoulder,
       rotatedDart,
       rotatedArmholeTop,
@@ -1105,7 +1105,7 @@ export function drawFrontDraft(pattern) {
     instructions: "Pinch shoulder dart together just for this step.",
   });
 
-  // 53 Cont.
+  // 52 Cont.
   let fDoublePrime = pointFStar.rotate(front.points.L, - dartAngle, {name: "F''", labelDir: 'N', instructions: "Establish F'' at the intersection of L-F' and the new shoulder line."});
   let fDoublePrimeEStar = fStarEStar.rotate(- dartAngle, {origin: front.points.L, name: "F''E*", hideInstructions: true})
   pattern.addStep({

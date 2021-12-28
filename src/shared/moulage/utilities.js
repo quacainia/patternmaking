@@ -166,14 +166,11 @@ export function getMaxEulerLength(scale) {
     scalePoint = currentPoint.mult(scale);
     newDist = origin.distTo(scalePoint);
     if (newDist < lastDist) {
-      // console.log("return", newDist, lastDist, N);
-      // console.log("t =", t);
       return lastDist;
     }
     lastDist = newDist;
     prevValue = currentValue;
   }
-  // console.log("end of loop");
 }
 
 export function chooseEulerSize(dist) {
@@ -322,7 +319,6 @@ export function getEuler(options) {
     return new Curve({error: 'containsNaNValues', options});
   }
   if ((endDistance || endDistanceParallel) && maxPoints === 2000) {
-    // console.log('end');
     return new Curve({error: 'ranOutOfPoints', options});
   }
   return new Curve({points: eulerPointsList, curveLength, tMax: t, options});
@@ -757,6 +753,7 @@ export function getEulerOfMeasurementWithInsidePoint(startPoint, insidePoint, en
 
 export function getFlippedEulerPerpendicularWithPointInside(
     curve, endPoint, insidePoints, startLine, canvasDimensions, options) {
+  options = {patternPieceName: undefined, ...options};
   let newCurve, originalCurve;
 
   let flippedCurve = curve.flip(0)
@@ -781,7 +778,7 @@ export function getFlippedEulerPerpendicularWithPointInside(
     points.push(curve.points.slice().pop());
     originalCurve = new Curve(Object.assign({}, originalCurve, {points}));
   } else {
-    newCurve = movedCurve;
+    newCurve = new Curve(movedCurve, options);
     originalCurve = curve;
   }
   return {flipped: newCurve, original: originalCurve};
@@ -1079,7 +1076,7 @@ export function getCurveFromMidpoint(curve, point, useReverseDirection) {
 }
 
 export function elongateCurve(curve, endDistance) {
-  return getEuler({...curve.options, endDistanceParallel: undefined, endDistance});
+  return getEuler({...curve, endDistanceParallel: undefined, endDistance});
 }
 
 export function getCurveEndsFromTwoMidpoints(curve, midPoint1, midPoint2) {
@@ -1168,6 +1165,8 @@ export function cutDarts(darts) {
 }
 
 export function copyCurve(curve, anchorPoint, destPoint, options, pointOptions) {
+  options = {patternPieceName: undefined, ...options};
+  pointOptions = {patternPieceName: undefined, ...pointOptions};
   let newCurve = curve;
   options = {...options};
 
