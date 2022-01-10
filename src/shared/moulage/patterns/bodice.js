@@ -1032,7 +1032,7 @@ export function drawFrontDraft(pattern) {
   let rulerCurve = utilities.getEulerPerpendicularWithPointInside(
     front.points["E'"], [front.points.O], [front.points.O, front.points.J], pattern.dimensions, {isLeftHanded: true, styleName: 'guide', maxInsidePointDist: 2}
   );
-  let longRulerCurve = utilities.elongateCurve(rulerCurve, endOfShoulder);
+  let longRulerCurve = utilities.elongateCurve(rulerCurve, {endLength: endOfShoulder});
   let pointEDoublePrime = new Point(
     longRulerCurve.points[longRulerCurve.points.length - 1],
     {name: "E''", instructions: `Establish point E'' ${endOfShoulder} inches from the waistline along the curved ruler.`}
@@ -1147,7 +1147,6 @@ export function drawFrontDraft(pattern) {
   );
   pattern.addStep({
     actions: [
-      pattern.patternPieces.back.curves["L'O"].reverse(),
       sideCurveCalc.curve,
       sideCurveCalc.endPoint,
     ],

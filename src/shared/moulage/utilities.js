@@ -93,7 +93,7 @@ export function grid(canvasDetails, context, size, width) {
 }
 
 export function getLine(start, end, options) {
-  return new Curve({points: [start, end], options});
+  return new Curve({points: [start, end]}, options);
 }
 
 export function drawPoint(context, point) {
@@ -201,8 +201,10 @@ export function getEuler(options) {
   - endDistance
     - Straight line distance that the curve should stop at
   - endDistanceParallel
-    - Alternative to length. Distance of final point to a line passing through
+    - Alternative to distance. Distance of final point to a line passing through
       the start point at an angle perpendicular to the start angle.
+  - endLength
+    - Alternative to distance. The length at which the curve ends.
   - isLeftHanded
     - Whether the curve should bend left (ccw) or right (cw)
   - maxPoints
@@ -226,6 +228,7 @@ export function getEuler(options) {
     {
       endDistance: null,
       endDistanceParallel: null,
+      endLength: null,
       isLeftHanded: false,
       maxPoints: 2000,
       measureLength: false,
@@ -240,6 +243,7 @@ export function getEuler(options) {
   let {
     endDistance,
     endDistanceParallel,
+    endLength,
     isLeftHanded,
     maxPoints,
     measureLength,
@@ -253,31 +257,42 @@ export function getEuler(options) {
       eulerPointsList = [startPoint], currentDist, startAngle, N = maxPoints-1,
       curveLength = 0, flip = false, currentValue = prevValue, midPoint,
       compensationAngle;
+  measureLength = measureLength || !!endLength;
 
   while (N--) {
     let currentPoint, dx, dy,plotPoint, linePoint,
         scalePoint, tSq;
 
-    if (tReverse && t > tReverse) {
+    if (tReverse && t >= tReverse) {
       tSq = (2*tReverse - t) ** 2;
       if (!midPoint) {
         let angle;
         midPoint = eulerPointsList[eulerPointsList.length - 1];
         flip = true;
-        angle = (new Point([prevValue.x, prevValue.y])).getAngle(new Point([currentValue.x, currentValue.y]));
+        if (eulerPointsList.length > 1) {
+          angle = (new Point([prevValue.x, prevValue.y])).getAngle(new Point([currentValue.x, currentValue.y]));
+        } else {
+          dx = Math.cos(tSq) * dt;
+          dy = Math.sin(tSq) * dt * (isLeftHanded ? -1 : 1);
+          let tempNextValue = {
+            x: prevValue.x + dx,
+            y: prevValue.y + dy,
+          }
+          angle = (new Point([prevValue.x, prevValue.y])).getAngle(new Point([tempNextValue.x, tempNextValue.y]));
+        }
         compensationAngle = 2 * (((angle + 2*Math.PI) % Math.PI) - Math.PI/2);
       }
     } else {
       tSq = t*t;
     }
 
-    dx = Math.cos(tSq) * dt;
-    dy = Math.sin(tSq) * dt;
+    dx = Math.cos(tSq) * dt * (flip ? -1 : 1);
+    dy = Math.sin(tSq) * dt * (isLeftHanded ? -1 : 1);
     t += dt;
     prevValue = currentValue;
     currentValue = {
-      x: prevValue.x + dx * (flip ? -1 : 1),
-      y: prevValue.y + dy * (isLeftHanded ? -1 : 1),
+      x: prevValue.x + dx,
+      y: prevValue.y + dy,
     };
     currentPoint = new Point([currentValue.x, currentValue.y]);
     scalePoint = currentPoint.mult(scale);
@@ -304,24 +319,28 @@ export function getEuler(options) {
       }
       let pointAngle = startAngle - startPoint.getAngle(plotPoint);
       if (currentDist * Math.cos(pointAngle) >= endDistanceParallel) {
-        return new Curve({points: eulerPointsList, curveLength, tMax: t, options});
+        return new Curve({points: eulerPointsList, curveLength, tMax: t}, options);
       }
-    } else if (currentDist >= endDistance) {
-      return new Curve({points: eulerPointsList, curveLength, tMax: t, options});
-    } else if (currentDist < prevDist) {
-      // TODO: Include this in the renaming of distance / length
-      return new Curve({error: 'maxLengthError', points: eulerPointsList, endDistance: currentDist, tMax: t, curveLength, options});
+    } else if (endDistance) {
+      if (currentDist >= endDistance) {
+        return new Curve({points: eulerPointsList, curveLength, tMax: t}, options);
+      } else if (currentDist < prevDist) {
+        // TODO: Include this in the renaming of distance / length
+        return new Curve({error: 'maxLengthError', points: eulerPointsList, endDistance: currentDist, tMax: t, curveLength}, options);
+      }
+    } else if (endLength && curveLength >= endLength) {
+      return new Curve({points: eulerPointsList, curveLength, tMax: t}, options);
     }
     prevDist = currentDist;
   }
   if (isNaN(eulerPointsList[eulerPointsList.length-1].x) || isNaN(eulerPointsList[eulerPointsList.length-1].y)) {
     // console.error("NaN values in Euler Spiral");
-    return new Curve({error: 'containsNaNValues', options});
+    return new Curve({error: 'containsNaNValues'}, options);
   }
   if ((endDistance || endDistanceParallel) && maxPoints === 2000) {
-    return new Curve({error: 'ranOutOfPoints', options});
+    return new Curve({error: 'ranOutOfPoints'}, options);
   }
-  return new Curve({points: eulerPointsList, curveLength, tMax: t, options});
+  return new Curve({points: eulerPointsList, curveLength, tMax: t}, options);
 }
 
 export function chooseEulerLeftHanded(startPoint, endPoint, options) {
@@ -397,6 +416,8 @@ export function getEulerParallelStart(startPoint, endPoint, parallelStartPoint) 
     }
 
     if (lastPoint.distTo(endPoint) < 1/32) {
+      // TODO: Fix this so that endPoint doesn't make a notch in the curve a la addCurveEndpointAndRotateToTrue
+      //       This one should be fixed by moving instead of rotating.
       let points = curve.points.slice();
       points.pop();
       points.push(endPoint);
@@ -492,6 +513,8 @@ export function getEulerParallelEnd(startPoint, endPoint, parallelEndPoint, opti
           continue;
         }
       }
+      // TODO: Fix this so that endPoint doesn't make a notch in the curve a la addCurveEndpointAndRotateToTrue
+      //       This one should be fixed by moving instead of rotating.
       let points = curve.points.slice();
       points.pop();
       points.push(endPoint);
@@ -576,13 +599,8 @@ export function getEulerMidpoint(startPoint, midPoint, endPoint, curveOptions) {
       continue;
     }
   }
-  let points = curve.points.slice();
-  points.pop();
-  points.push(endPoint);
-  points[0] = startPoint;
-  curve = new Curve(Object.assign({}, curve, {points}));
 
-  return curve;
+  return addCurveEndpointAndRotateToTrue(curve, endPoint);
 }
 
 export function getEulerPerpendicularWithPointInside(endPoint, insidePoints, startLine, canvasDimensions, options) {
@@ -648,6 +666,8 @@ export function getEulerPerpendicularWithPointInside(endPoint, insidePoints, sta
     }
     if (pointsAreInsideCurve) {
       if (minInsidePointsDist < maxInsidePointDist) {
+        // TODO: Fix this so that endPoint doesn't make a notch in the curve a la addCurveEndpointAndRotateToTrue
+        //       This one should be fixed by moving instead of rotating.
         let points = movedCurve.points.slice();
         points.pop();
         points.push(endPoint);
@@ -729,11 +749,8 @@ export function getEulerOfMeasurementWithInsidePoint(startPoint, insidePoint, en
 
     let {isPointInCurve} = getPointInsideCurve(curve.points, insidePoint)
     if (isPointInCurve && Math.abs(curve.curveLength - measurement) < 1/16) {
-      let points = curve.points.slice();
-      points.pop();
-      points.push(endPoint);
-      points[0] = startPoint;
-      curve = new Curve(Object.assign({}, curve, {points}));
+      curve.points[0] = startPoint;
+      curve = addCurveEndpointAndRotateToTrue(curve, endPoint);
       break;
     } else if (curve.curveLength < measurement) {
       t0 = t0 + (t0Delta);
@@ -882,7 +899,7 @@ export function getIntersection(line1Point1, line1Point2, line2Point1, line2Poin
   let D = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
   let Px = ((x1*y2 - y1*x2)*(x3 - x4) - (x1 - x2)*(x3*y4 - y3*x4))/D;
   let Py = ((x1*y2 - y1*x2)*(y3 - y4) - (y1 - y2)*(x3*y4 - y3*x4))/D;
-  if (Math.abs(Px) === Infinity || Math.abs(Py) === Infinity || isNaN(Px) || isNaN(Py) || Px > canvasDimensions.x.max || Px < canvasDimensions.x.min || Py > canvasDimensions.y.max || Py < canvasDimensions.y.min) {
+  if (Math.abs(Px) === Infinity || Math.abs(Py) === Infinity || isNaN(Px) || isNaN(Py) || (canvasDimensions && (Px > canvasDimensions.x.max || Px < canvasDimensions.x.min || Py > canvasDimensions.y.max || Py < canvasDimensions.y.min))) {
     // TODO: Handle these errors better
     console.error("Intersection error:", {Px, Py});
     return null
@@ -1075,8 +1092,19 @@ export function getCurveFromMidpoint(curve, point, useReverseDirection) {
   return newCurve;
 }
 
-export function elongateCurve(curve, endDistance) {
-  return getEuler({...curve, endDistanceParallel: undefined, endDistance});
+export function elongateCurve(curve, elongateOptions, options) {
+  let endDistance, endDistanceParallel, endLength;
+  if (elongateOptions?.endDistance) {
+    endDistance = elongateOptions.endDistance;
+  } else if (elongateOptions?.endDistanceParallel) {
+    endDistanceParallel = elongateOptions.endDistanceParallel;
+  } else if (elongateOptions?.endLength) {
+    endLength = elongateOptions.endLength;
+  } else {
+    return null;
+  }
+  let newCurve = getEuler({...curve, endDistance, endDistanceParallel, endLength, ...options});
+  return newCurve;
 }
 
 export function getCurveEndsFromTwoMidpoints(curve, midPoint1, midPoint2) {
@@ -1180,14 +1208,11 @@ export function copyCurve(curve, anchorPoint, destPoint, options, pointOptions) 
 
   newCurve = newCurve.move(anchorPoint.subv(newCurve.points[0]));
 
-  let directionalCurve = elongateCurve(newCurve, anchorPoint.distTo(destPoint));
-  directionalCurve = directionalCurve.rotate(
+  let distanceCurve = elongateCurve(newCurve, {endLength: anchorPoint.distTo(destPoint)});
+
+  newCurve = distanceCurve.rotate(
     anchorPoint.getAngle(destPoint)
-    - directionalCurve.points[0].getAngle(directionalCurve.points[directionalCurve.points.length - 1])
-  );
-  newCurve = newCurve.rotate(
-    directionalCurve.points[1].getAngle(directionalCurve.points[2])
-    - newCurve.points[1].getAngle(newCurve.points[2])
+    - distanceCurve.points[0].getAngle(distanceCurve.points[distanceCurve.points.length - 1])
   );
 
   let lastPoint = new Point(newCurve.points[newCurve.points.length - 1], pointOptions);
@@ -1201,6 +1226,40 @@ export function copyCurve(curve, anchorPoint, destPoint, options, pointOptions) 
   }
 }
 
+export function addCurveEndpointAndRotateToTrue(curve, endPoint) {
+  let points = curve.points.slice();
+  let startPoint = points[0];
+  let lastPoint = points[points.length - 1];
+  let secondLastPoint = points[points.length - 2];
+  let distPoint = getPointAlongLineDistanceFromPoint([lastPoint, secondLastPoint], startPoint, startPoint.distTo(endPoint));
+  if (angleApprox(secondLastPoint.getAngle(distPoint), secondLastPoint.getAngle(lastPoint))) {
+    if (secondLastPoint.distTo(distPoint) < secondLastPoint.distTo(lastPoint)) {
+      points.pop();
+    }
+    let angle = startPoint.getAngle(endPoint) - startPoint.getAngle(distPoint);
+    curve = new Curve({...curve, points}).rotate(angle);
+    points = curve.points.slice()
+    points[0] = startPoint;
+    points.push(endPoint);
+    let newCurve = new Curve({...curve, points});
+    return newCurve
+  } else {
+    // If the second to last point is also past the endpoint
+    console.error("addCurveEndpointAndRotateToTrue", "Incomplete code!");
+    // This should be an impossible condition if built with getEuler({endDistance})
+    // But in the case that it happens my hypothesized code was the following, but
+    // recursion is scary.
+
+    // points.pop()
+    // curve.points = points
+    // return addCurveEndpointAndRotateToTrue(cruve, endPoint);
+
+  }
+}
+
+function angleApprox(angle1, angle2, margin=0.001) {
+  return Math.abs(angle1 - angle2) < margin;
+}
 
 // console.log(EULER_SCALE_SMALL, getMaxEulerLength(EULER_SCALE_SMALL));
 // console.log(EULER_SCALE_STD, getMaxEulerLength(EULER_SCALE_STD));

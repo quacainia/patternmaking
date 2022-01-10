@@ -356,9 +356,40 @@ export class Curve {
   // A long list of points to display as a curve
   type = 'Curve';
   typeContainer = 'curves'
+  optionKeys = [
+    'curveStyle',
+    'endDistance',
+    'endDistanceParallel',
+    'error',
+    'generatedInstructions',
+    'hideInstructions',
+    'instructions',
+    'isLeftHanded',
+    'maxInsidePointDist',
+    'maxPoints',
+    'midPoint',
+    'measureLength',
+    'mutations',
+    'name',
+    'patternPieceName',
+    'rotationAngle',
+    'scale',
+    'stepId',
+    'styleName',
+    't0',
+    'tMax',
+    'tReverse',
+  ]
 
   constructor(values, options) {
     options = {...values.options, ...options};
+
+    Object.keys(options).forEach(key => {
+      if (this.optionKeys.indexOf(key) < 0) {
+        delete options[key];
+      }
+    });
+
     values = {
       curveLength: null,
       endDistance: null,
@@ -439,6 +470,9 @@ export class Curve {
       angle = this.points[index-1].getAngle(this.points[index+1]);
     }
 
+    let rotationAngle = this.rotationAngle || 0;
+    rotationAngle = 2 * (angle - rotationAngle);
+
     let p1 = this.points[index];
     let p2 = p1.toAngleDistance(angle, 1);
 
@@ -462,7 +496,8 @@ export class Curve {
         options: {
           ...this.options,
           isLeftHanded: !this.isLeftHanded,
-        }
+        },
+        rotationAngle
       }
     ));
   }
@@ -492,15 +527,25 @@ export class Curve {
     mutations.push({
       type: "reverse",
     })
+
+    let rotationAngle = this.rotationAngle || 0;
+    if (this.points && this.points.length > 1) {
+      let startAngle = this.points[0].getAngle(this.points[1]);
+      let endAngle = this.points[this.points.length - 2].getAngle(this.points[this.points.length - 1]);
+      let startRotDiff = rotationAngle - startAngle;
+      rotationAngle = Math.PI - (startAngle - endAngle * 2) - startRotDiff;
+      rotationAngle = (rotationAngle + Math.PI * 2) % (Math.PI * 2);
+    }
+
     return new Curve({
       ...this,
       points,
       options: {
-        ...this.options,
         t0: this.tMax,
         tReverse: this.tReverse || this.tMax,
         tMax: this.t0,
-        isLeftHanded: !this.isLeftHanded
+        isLeftHanded: !this.isLeftHanded,
+        rotationAngle,
       },
       mutations
     });
